@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "dgSpecHash": "vezlJ1t23T4=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\mark\\Documents\\Visual Studio\\MiniSuite\\MiniLaunch\\MiniLaunch.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\mark\\.nuget\\packages\\microsoft.net.illink.tasks\\10.0.10\\microsoft.net.illink.tasks.10.0.10.nupkg.sha512",
+    "C:\\Users\\mark\\.nuget\\packages\\microsoft.netcore.app.runtime.win-x64\\10.0.10\\microsoft.netcore.app.runtime.win-x64.10.0.10.nupkg.sha512",
+    "C:\\Users\\mark\\.nuget\\packages\\microsoft.windowsdesktop.app.runtime.win-x64\\10.0.10\\microsoft.windowsdesktop.app.runtime.win-x64.10.0.10.nupkg.sha512",
+    "C:\\Users\\mark\\.nuget\\packages\\microsoft.aspnetcore.app.runtime.win-x64\\10.0.10\\microsoft.aspnetcore.app.runtime.win-x64.10.0.10.nupkg.sha512",
+    "C:\\Users\\mark\\.nuget\\packages\\microsoft.windows.sdk.net.ref\\10.0.17763.57\\microsoft.windows.sdk.net.ref.10.0.17763.57.nupkg.sha512"
+  ],
+  "logs": []
+}

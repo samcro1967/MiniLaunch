@@ -1,0 +1,10 @@
+U:\Users\mark\Documents\Visual Studio\publish\MiniLanuch\MiniLaunch.exe
+U:\Users\mark\Documents\Visual Studio\publish\MiniLanuch\Resources\about.ico
+U:\Users\mark\Documents\Visual Studio\publish\MiniLanuch\Resources\exit.ico
+U:\Users\mark\Documents\Visual Studio\publish\MiniLanuch\Resources\MiniLaunch.ico
+U:\Users\mark\Documents\Visual Studio\publish\MiniLanuch\Resources\profile.ico
+U:\Users\mark\Documents\Visual Studio\publish\MiniLanuch\Resources\settings.ico
+U:\Users\mark\Documents\Visual Studio\publish\MiniLanuch\MiniLaunch.dll
+U:\Users\mark\Documents\Visual Studio\publish\MiniLanuch\MiniLaunch.deps.json
+U:\Users\mark\Documents\Visual Studio\publish\MiniLanuch\MiniLaunch.runtimeconfig.json
+U:\Users\mark\Documents\Visual Studio\publish\MiniLanuch\MiniLaunch.pdb
