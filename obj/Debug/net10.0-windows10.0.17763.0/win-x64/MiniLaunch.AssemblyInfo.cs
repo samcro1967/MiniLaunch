@@ -15,7 +15,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyDescriptionAttribute("Launch and organize application workspaces from the system tray.")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+03ade6bb9d063e396a2509c7a430a7fefcdc325b")]
 [assembly: System.Reflection.AssemblyProductAttribute("MiniLaunch")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MiniLaunch")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
