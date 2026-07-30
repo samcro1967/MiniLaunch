@@ -298,6 +298,21 @@ public class MiniLaunchContext : ApplicationContext
 
             var name = form.ProfileName;
 
+            // ✅ CHECK FOR EXISTING (this is what you're missing)
+            var existing = _profileService.GetProfileNames();
+
+            if (existing.Any(p => string.Equals(p, name, StringComparison.OrdinalIgnoreCase)))
+            {
+                var result = MessageBox.Show(
+                    $"A profile named '{name}' already exists.\n\nDo you want to overwrite it?",
+                    "Confirm Overwrite",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Warning);
+
+                if (result != DialogResult.Yes)
+                    return;
+            }
+
             var profile = _profileService.CaptureProfile();
             _profileService.SaveProfile(profile, name);
 
@@ -345,16 +360,36 @@ public class MiniLaunchContext : ApplicationContext
         if (string.IsNullOrWhiteSpace(newName) || newName == oldName)
             return;
 
+        var existing = _profileService.GetProfileNames();
+
+        var match = existing.FirstOrDefault(p =>
+            string.Equals(p, newName, StringComparison.OrdinalIgnoreCase));
+
+        if (match != null)
+        {
+            var result = MessageBox.Show(
+                $"A profile named '{newName}' already exists.\n\nDo you want to overwrite it?",
+                "Confirm Overwrite",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning);
+
+            if (result != DialogResult.Yes)
+                return;
+
+            // 🔥 Delete existing BEFORE rename (important)
+            _profileService.DeleteProfile(match);
+        }
+
         try
         {
             _profileService.RenameProfile(oldName, newName);
 
-            // 🔥 Update default if renamed
+            // 🔥 Update default if needed
             if (File.Exists(DefaultProfilePath))
             {
                 var current = File.ReadAllText(DefaultProfilePath);
 
-                if (current == oldName)
+                if (string.Equals(current, oldName, StringComparison.OrdinalIgnoreCase))
                 {
                     File.WriteAllText(DefaultProfilePath, newName);
                 }

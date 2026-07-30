@@ -44,7 +44,6 @@ public class ProfileService
             {
                 if (module.TryCapture(out var app) && app != null)
                 {
-                    // ✅ Only enrich — NO window lookup here
                     module.EnrichCaptured(app);
 
                     profile.Apps.Add(app);
@@ -54,7 +53,7 @@ public class ProfileService
             }
             catch
             {
-                // never let one app break capture
+                // Never let one app break capture
             }
         }
 
