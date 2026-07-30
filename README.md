@@ -188,7 +188,9 @@ Verify files exist in:
 
 ## License
 
-See `LICENSE.txt` included with the application.
+MiniLaunch is licensed under the MIT License.
+
+See [LICENSE](LICENSE) for details.
 
 ---
 

@@ -291,30 +291,33 @@ public class MiniLaunchContext : ApplicationContext
 
     private void Capture()
     {
-        var name = Prompt.Show("Enter profile name:", "Capture Profile");
-
-        if (string.IsNullOrWhiteSpace(name))
-            return;
-
-        var profile = _profileService.CaptureProfile();
-        _profileService.SaveProfile(profile, name);
-
-        // 🔥 Set default ONLY if none exists
-        Directory.CreateDirectory(AppDataDir);
-
-        if (!File.Exists(DefaultProfilePath))
+        using (var form = new CaptureProfileForm())
         {
-            File.WriteAllText(DefaultProfilePath, name);
+            if (form.ShowDialog() != DialogResult.OK)
+                return;
+
+            var name = form.ProfileName;
+
+            var profile = _profileService.CaptureProfile();
+            _profileService.SaveProfile(profile, name);
+
+            // 🔥 Set default ONLY if none exists
+            Directory.CreateDirectory(AppDataDir);
+
+            if (!File.Exists(DefaultProfilePath))
+            {
+                File.WriteAllText(DefaultProfilePath, name);
+            }
+
+            RefreshMenu();
+
+            MessageBox.Show(
+                $"Profile '{name}' captured.",
+                "MiniLaunch",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information
+            );
         }
-
-        RefreshMenu();
-
-        MessageBox.Show(
-            $"Profile '{name}' captured.",
-            "MiniLaunch",
-            MessageBoxButtons.OK,
-            MessageBoxIcon.Information
-        );
     }
 
     private void Run(string name)
