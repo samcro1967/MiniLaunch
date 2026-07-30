@@ -1,0 +1,64 @@
+{
+  "Apps": [
+    {
+      "Type": "chrome",
+      "Monitor": 0,
+      "X": -8,
+      "Y": -8,
+      "Width": 1936,
+      "Height": 1048,
+      "Maximized": false,
+      "Urls": [
+        "http://www.google.com",
+        "https://www.espn.com"
+      ],
+      "Delay": 0
+    },
+    {
+      "Type": "explorer",
+      "Monitor": 0,
+      "X": 0,
+      "Y": 0,
+      "Width": 3840,
+      "Height": 1080,
+      "Maximized": false,
+      "Path": "C:\\Users\\samcor1967\\Documents\\Visual Studio",
+      "Delay": 0
+    },
+    {
+      "Type": "notepad",
+      "Monitor": 1,
+      "X": 2291,
+      "Y": 20,
+      "Width": 1537,
+      "Height": 998,
+      "Maximized": false,
+      "Session": "C:\\Users\\samcor1967\\AppData\\Local\\MiniLaunch\\workspaces\\MiniLaunch.xml",
+      "Delay": 0
+    },
+    {
+      "Type": "terminal",
+      "Monitor": 1,
+      "X": 2021,
+      "Y": 219,
+      "Width": 1200,
+      "Height": 800,
+      "Maximized": false,
+      "Tabs": [
+        "-p \"SSH osuhickeys4\""
+      ],
+      "Delay": 0
+    },
+    {
+      "Type": "visualstudio",
+      "Monitor": 1,
+      "X": 1912,
+      "Y": -8,
+      "Width": 1936,
+      "Height": 1048,
+      "Maximized": false,
+      "Path": "C:\\Users\\samcor1967\\Documents\\Visual Studio\\MiniSuite\\MiniSuite.slnx",
+      "Delay": 0
+    }
+  ]
+}

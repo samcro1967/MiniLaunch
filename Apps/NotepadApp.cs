@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
+using System.Windows.Forms;
 
 public class NotepadApp : IAppModule
 {
@@ -8,7 +9,8 @@ public class NotepadApp : IAppModule
 
     public string DisplayName => "Notepad++";
 
-    // 🔥 NEW: determine if Notepad++ should be captured
+    // ----------------- CAPTURE -----------------
+
     public bool TryCapture(out AppConfig? app)
     {
         app = null;
@@ -24,40 +26,43 @@ public class NotepadApp : IAppModule
         if (handle == IntPtr.Zero)
             return false;
 
+        // 🔥 REAL WINDOW CAPTURE (fix)
+        if (!WindowHelpers.TryGetWindowRect(handle, out var rect))
+            return false;
+
         app = new AppConfig
         {
             Type = Type,
-            X = 100,
-            Y = 100,
-            Width = 1200,
-            Height = 800
+            X = rect.Left,
+            Y = rect.Top,
+            Width = rect.Right - rect.Left,
+            Height = rect.Bottom - rect.Top,
+            Maximized = false,
+            Monitor = WindowHelpers.GetMonitorIndexFromWindow(handle)
         };
 
         return true;
     }
 
+    // ----------------- ENRICH -----------------
+
     public void EnrichCaptured(AppConfig app)
     {
-        app.Files = new List<string>();
-        app.Session = null; // 🔥 better than ""
+        // ✅ Session-only placeholder
+        app.Session = "";
     }
+
+    // ----------------- LAUNCH -----------------
 
     public void Launch(AppConfig app)
     {
         string exe = ResolveNotepadPath();
 
-        Process? process = null;
+        Process? process;
 
         if (!string.IsNullOrWhiteSpace(app.Session))
         {
             process = Process.Start(exe, $"-openSession \"{app.Session}\"");
-        }
-        else if (app.Files?.Any() == true)
-        {
-            process = Process.Start(
-                exe,
-                string.Join(" ", app.Files.Select(f => $"\"{f}\""))
-            );
         }
         else
         {
@@ -68,7 +73,7 @@ public class NotepadApp : IAppModule
 
         var handle = WindowHelpers.WaitForMainWindow(process);
 
-        // 🔥 fallback (rare but safe)
+        // 🔥 fallback
         if (handle == IntPtr.Zero)
         {
             Thread.Sleep(500);
@@ -87,7 +92,8 @@ public class NotepadApp : IAppModule
                 app.X,
                 app.Y,
                 app.Width,
-                app.Height
+                app.Height,
+                app.Maximized
             );
         }
     }

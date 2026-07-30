@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Linq;
 using System.Threading;
+using System.Windows.Forms;
 
 public class VisualStudioApp : IAppModule
 {
@@ -8,7 +9,8 @@ public class VisualStudioApp : IAppModule
 
     public string DisplayName => "Visual Studio";
 
-    // 🔥 Detect if Visual Studio is running
+    // ----------------- CAPTURE -----------------
+
     public bool TryCapture(out AppConfig? app)
     {
         app = null;
@@ -24,36 +26,39 @@ public class VisualStudioApp : IAppModule
         if (handle == IntPtr.Zero)
             return false;
 
+        // 🔥 REAL WINDOW CAPTURE (fix)
+        if (!WindowHelpers.TryGetWindowRect(handle, out var rect))
+            return false;
+
         app = new AppConfig
         {
             Type = Type,
-            X = 100,
-            Y = 100,
-            Width = 1400,
-            Height = 900,
+            X = rect.Left,
+            Y = rect.Top,
+            Width = rect.Right - rect.Left,
+            Height = rect.Bottom - rect.Top,
             Maximized = false,
-
-            // 🔥 future support
-            Path = GetSolutionPath(proc)
+            Monitor = WindowHelpers.GetMonitorIndexFromWindow(handle)
         };
 
         return true;
     }
 
+    // ----------------- ENRICH -----------------
+
     public void EnrichCaptured(AppConfig app)
     {
-        // nothing extra yet
-        // later: solution parsing improvements
+        // ✅ Placeholder for solution path
+        app.Path = "";
     }
+
+    // ----------------- LAUNCH -----------------
 
     public void Launch(AppConfig app)
     {
-        string args = "";
-
-        if (!string.IsNullOrWhiteSpace(app.Path))
-        {
-            args = $"\"{app.Path}\"";
-        }
+        string args = string.IsNullOrWhiteSpace(app.Path)
+            ? ""
+            : $"\"{app.Path}\"";
 
         var process = Process.Start(new ProcessStartInfo
         {
@@ -88,21 +93,6 @@ public class VisualStudioApp : IAppModule
                 app.Height,
                 app.Maximized
             );
-        }
-    }
-
-    // 🔥 Attempt to extract solution path (basic version)
-    private string? GetSolutionPath(Process process)
-    {
-        try
-        {
-            // Basic fallback — real extraction is complex
-            // You can improve later with window title parsing
-            return null;
-        }
-        catch
-        {
-            return null;
         }
     }
 }

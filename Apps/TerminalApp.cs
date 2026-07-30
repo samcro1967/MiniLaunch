@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
+using System.Windows.Forms;
 
 public class TerminalApp : IAppModule
 {
@@ -8,7 +9,8 @@ public class TerminalApp : IAppModule
 
     public string DisplayName => "Windows Terminal";
 
-    // 🔥 NEW: determine if Terminal should be captured
+    // ----------------- CAPTURE -----------------
+
     public bool TryCapture(out AppConfig? app)
     {
         app = null;
@@ -24,27 +26,37 @@ public class TerminalApp : IAppModule
         if (handle == IntPtr.Zero)
             return false;
 
+        // 🔥 REAL WINDOW CAPTURE
+        if (!WindowHelpers.TryGetWindowRect(handle, out var rect))
+            return false;
+
         app = new AppConfig
         {
             Type = Type,
-            X = 100,
-            Y = 100,
-            Width = 1200,
-            Height = 800,
-            Maximized = false
+            X = rect.Left,
+            Y = rect.Top,
+            Width = rect.Right - rect.Left,
+            Height = rect.Bottom - rect.Top,
+            Maximized = false,
+            Monitor = WindowHelpers.GetMonitorIndexFromWindow(handle)
         };
 
         return true;
     }
 
+    // ----------------- ENRICH -----------------
+
     public void EnrichCaptured(AppConfig app)
     {
+        // ✅ Placeholder
         app.Tabs = new List<string>();
     }
 
+    // ----------------- LAUNCH -----------------
+
     public void Launch(AppConfig app)
     {
-        string args = "";
+        string? args = null;
 
         if (app.Tabs?.Any() == true)
         {
@@ -61,7 +73,7 @@ public class TerminalApp : IAppModule
         Process.Start(new ProcessStartInfo
         {
             FileName = "wt",
-            Arguments = args,
+            Arguments = args ?? "",
             UseShellExecute = true
         });
 
@@ -107,6 +119,8 @@ public class TerminalApp : IAppModule
             );
         }
     }
+
+    // ----------------- HELPERS -----------------
 
     private bool IsTerminalProcess(Process p)
     {

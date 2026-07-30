@@ -2,7 +2,7 @@
 
 MiniLaunch is a lightweight Windows tray application that lets you capture and launch multi-app workspace profiles.
 
-It is designed to quickly restore your working environment — apps, windows, and layouts — with minimal friction.
+It restores your entire workspace — apps, windows, and layout — in seconds.
 
 ---
 
@@ -19,9 +19,20 @@ It is designed to quickly restore your working environment — apps, windows, an
 
 ## Installation
 
-1. Download the latest MiniLaunchSetup.exe
+1. Download the latest `MiniLaunchSetup.exe`
 2. Run the installer
 3. Launch MiniLaunch (runs in system tray)
+
+---
+
+## Example Profiles
+
+See the `/examples` folder for sample configurations:
+
+- [captured_profile.json](examples/captured_profile.json) – Generated after capturing your current layout
+- [configured_profile.json](examples/configured_profile.json) – Edited version with apps, paths, and tabs defined
+
+You can copy and modify these to create your own profiles.
 
 ---
 
@@ -31,19 +42,19 @@ It is designed to quickly restore your working environment — apps, windows, an
 
 Right-click the tray icon:
 
-Profiles >
-    Capture Profile
-    Run >
-    Rename >
-    Delete >
+**Profiles**
+- Capture Profile
+- Run >
+- Rename >
+- Delete >
 
-Settings >
-    Startup With Windows >
-        Currently Enabled/Disabled
-        Enable/Disable
+**Settings**
+- Startup With Windows
+  - Currently Enabled/Disabled
+  - Enable/Disable
 
-About
-Exit
+**About**  
+**Exit**
 
 ---
 
@@ -69,9 +80,10 @@ MiniLaunch uses a modular launcher system. Currently supported:
 - Google Chrome (new window + tabs)
 - Windows Terminal (tabs / profiles)
 - Windows Explorer (single folder)
-- Notepad++ (files and session)
+- Notepad++ (session)
+- Visual Studio
 
-Support is implemented via internal modules (IAppModule).
+Support is implemented via internal modules (`IAppModule`).
 
 Additional apps can be added by implementing new modules.
 
@@ -81,7 +93,9 @@ Additional apps can be added by implementing new modules.
 
 Profiles are stored as JSON files:
 
+```
 %LOCALAPPDATA%\MiniLaunch\Profiles
+```
 
 Each profile represents a captured workspace.
 
@@ -93,7 +107,9 @@ Each profile represents a captured workspace.
 
 Settings are stored here:
 
+```
 %LOCALAPPDATA%\MiniLaunch\settings.json
+```
 
 ---
 
@@ -102,7 +118,7 @@ Settings are stored here:
 You can edit this file manually:
 
 1. Close MiniLaunch
-2. Open settings.json in a text editor
+2. Open `settings.json` in a text editor
 3. Modify values
 4. Restart MiniLaunch
 
@@ -110,9 +126,11 @@ You can edit this file manually:
 
 ### Example
 
+```json
 {
   "StartWithWindows": true
 }
+```
 
 ---
 
@@ -121,19 +139,21 @@ You can edit this file manually:
 MiniLaunch can start automatically with Windows.
 
 - Controlled via tray menu:
-  Settings → Startup With Windows
+  - Settings → Startup With Windows
 
 - Uses registry:
+  ```
   HKCU\Software\Microsoft\Windows\CurrentVersion\Run
+  ```
 
 ---
 
 ## Architecture
 
-- Tray-based ApplicationContext
-- Modular launcher system (IAppModule)
+- Tray-based `ApplicationContext`
+- Modular launcher system (`IAppModule`)
 - JSON-based profiles
-- FileSystemWatcher for live updates
+- `FileSystemWatcher` for live updates
 
 ---
 
@@ -150,7 +170,9 @@ MiniLaunch can start automatically with Windows.
 
 Check registry:
 
+```
 HKCU\Software\Microsoft\Windows\CurrentVersion\Run
+```
 
 ---
 
@@ -158,16 +180,19 @@ HKCU\Software\Microsoft\Windows\CurrentVersion\Run
 
 Verify files exist in:
 
+```
 %LOCALAPPDATA%\MiniLaunch\Profiles
+```
 
 ---
 
 ## License
 
-See LICENSE.txt included with the application.
+See `LICENSE.txt` included with the application.
 
 ---
 
 ## Notes
 
+MiniLaunch is part of the MiniSuite utilities.
 MiniLaunch is part of the MiniSuite utilities.

@@ -1,7 +1,7 @@
+using MiniLaunch.Profiles;
 using System.Diagnostics;
 using System.Text.Json;
-using System.Windows.Forms;
-using MiniLaunch.Profiles;
+using System.Text.Json.Serialization;
 
 public class ProfileService
 {
@@ -44,32 +44,12 @@ public class ProfileService
             {
                 if (module.TryCapture(out var app) && app != null)
                 {
-                    // 🔥 Enrich app-specific settings
+                    // ✅ Only enrich — NO window lookup here
                     module.EnrichCaptured(app);
-
-                    // 🔥 Get real window position (best effort)
-                    var handle = WindowHelpers.FindWindowByProcessName(app.Type);
-
-                    if (handle != IntPtr.Zero &&
-                        WindowHelpers.TryGetWindowRect(handle, out var rect))
-                    {
-                        app.X = rect.Left;
-                        app.Y = rect.Top;
-                        app.Width = rect.Right - rect.Left;
-                        app.Height = rect.Bottom - rect.Top;
-
-                        var center = new System.Drawing.Point(
-                            (rect.Left + rect.Right) / 2,
-                            (rect.Top + rect.Bottom) / 2
-                        );
-
-                        var screen = Screen.FromPoint(center);
-                        app.Monitor = Array.IndexOf(Screen.AllScreens, screen);
-                    }
 
                     profile.Apps.Add(app);
 
-                    Console.WriteLine($"Captured: {app.Type}");
+                    Trace.WriteLine($"Captured: {app.Type}");
                 }
             }
             catch
@@ -91,12 +71,13 @@ public class ProfileService
 
         var json = JsonSerializer.Serialize(profile, new JsonSerializerOptions
         {
-            WriteIndented = true
+            WriteIndented = true,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
         });
 
         File.WriteAllText(path, json);
 
-        Console.WriteLine($"Profile saved: {path}");
+        Trace.WriteLine($"Profile saved: {path}");
     }
 
     // ----------------- LOAD -----------------
@@ -107,7 +88,7 @@ public class ProfileService
 
         if (!File.Exists(path))
         {
-            Console.WriteLine($"Profile not found: {path}");
+            Trace.WriteLine($"Profile not found: {path}");
             return new Profile();
         }
 
@@ -128,7 +109,7 @@ public class ProfileService
     {
         foreach (var app in profile.Apps)
         {
-            Console.WriteLine($"Launching {app.Type}");
+            Trace.WriteLine($"Launching {app.Type}");
 
             var module = _modules.FirstOrDefault(m => m.Type == app.Type);
 
@@ -138,7 +119,7 @@ public class ProfileService
             }
             else
             {
-                Console.WriteLine($"No module for {app.Type}");
+                Trace.WriteLine($"No module for {app.Type}");
             }
 
             if (app.Delay > 0)
