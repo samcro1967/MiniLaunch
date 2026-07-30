@@ -3,6 +3,7 @@ using System.Threading;
 using System.Windows.Forms;
 using MiniLaunch.Profiles;
 using MiniLaunch.UI;
+using MiniLaunch; // ✅ NEW
 
 internal static class Program
 {
@@ -26,7 +27,6 @@ internal static class Program
             return;
         }
 
-        // 🔥 GLOBAL EXCEPTION HANDLING (same as MiniHide)
         Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
 
         Application.ThreadException += (sender, args) =>
@@ -64,7 +64,6 @@ internal static class Program
         }
     }
 
-    // 🔥 SAME CRASH HANDLER AS MINI HIDE
     private static void HandleException(Exception ex)
     {
         try
@@ -93,10 +92,7 @@ internal static class Program
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Error);
         }
-        catch
-        {
-            // Never crash while handling a crash
-        }
+        catch { }
     }
 }
 
@@ -116,7 +112,6 @@ public class MiniLaunchContext : ApplicationContext
     private static string DefaultProfilePath =>
         Path.Combine(AppDataDir, "default_profile.txt");
 
-    // 🔥 ONE-TIME SUPPRESS FLAG
     private static string SuppressFlagPath =>
         Path.Combine(Path.GetTempPath(), "MiniLaunch_suppress_startup.flag");
 
@@ -133,23 +128,16 @@ public class MiniLaunchContext : ApplicationContext
         };
 
         if (File.Exists(SuppressFlagPath))
-        {
             File.Delete(SuppressFlagPath);
-        }
         else
-        {
             ShowStartupNotification();
-        }
 
-        // 🔥 UPDATED: use default logic
         _tray.DoubleClick += (_, _) => RunDefaultProfile();
 
         _tray.MouseUp += (_, e) =>
         {
             if (e.Button == MouseButtons.Right)
-            {
                 RefreshMenu();
-            }
         };
 
         Microsoft.Win32.SystemEvents.SessionSwitch += OnSessionSwitch;
@@ -168,8 +156,6 @@ public class MiniLaunchContext : ApplicationContext
         _watcher.EnableRaisingEvents = true;
     }
 
-    // ---------------- DEFAULT PROFILE LOGIC ----------------
-
     private void RunDefaultProfile()
     {
         var profiles = _profileService.GetProfileNames();
@@ -179,7 +165,6 @@ public class MiniLaunchContext : ApplicationContext
 
         Directory.CreateDirectory(AppDataDir);
 
-        // 🔥 If default exists and is valid → run it
         if (File.Exists(DefaultProfilePath))
         {
             var name = File.ReadAllText(DefaultProfilePath);
@@ -191,15 +176,10 @@ public class MiniLaunchContext : ApplicationContext
             }
         }
 
-        // 🔥 Default missing/invalid → promote first profile
         var newDefault = profiles[0];
-
         File.WriteAllText(DefaultProfilePath, newDefault);
-
         Run(newDefault);
     }
-
-    // ---------------- STARTUP MESSAGE ----------------
 
     private void ShowStartupNotification()
     {
@@ -210,14 +190,10 @@ public class MiniLaunchContext : ApplicationContext
             ToolTipIcon.Info);
     }
 
-    // ---------------- TRAY RESILIENCE ----------------
-
     private void OnSessionSwitch(object? sender, Microsoft.Win32.SessionSwitchEventArgs e)
     {
         if (e.Reason == Microsoft.Win32.SessionSwitchReason.SessionUnlock)
-        {
             RecreateTrayIcon();
-        }
     }
 
     private void OnSessionEnding(object? sender, Microsoft.Win32.SessionEndingEventArgs e)
@@ -231,16 +207,12 @@ public class MiniLaunchContext : ApplicationContext
         {
             _tray.Visible = false;
 
-            var timer = new System.Windows.Forms.Timer
-            {
-                Interval = 50
-            };
+            var timer = new System.Windows.Forms.Timer { Interval = 50 };
 
             timer.Tick += (_, _) =>
             {
                 timer.Stop();
                 timer.Dispose();
-
                 _tray.Icon = AppIcons.App;
                 _tray.Visible = true;
             };
@@ -250,26 +222,19 @@ public class MiniLaunchContext : ApplicationContext
         catch { }
     }
 
-    // ---------------- FILE WATCHER ----------------
-
     private void OnProfilesChanged(object sender, FileSystemEventArgs e)
     {
         try
         {
-            if (_tray != null)
-            {
-                _tray.GetType()
-                    .GetMethod("BeginInvoke", BindingFlags.Instance | BindingFlags.NonPublic)
-                    ?.Invoke(_tray, new object[] { new Action(RefreshMenu) });
-            }
+            _tray?.GetType()
+                .GetMethod("BeginInvoke", BindingFlags.Instance | BindingFlags.NonPublic)
+                ?.Invoke(_tray, new object[] { new Action(RefreshMenu) });
         }
         catch
         {
             RefreshMenu();
         }
     }
-
-    // ---------------- MENU ----------------
 
     private ContextMenuStrip BuildMenu()
     {
@@ -287,8 +252,6 @@ public class MiniLaunchContext : ApplicationContext
         return builder.Build();
     }
 
-    // ---------------- ACTIONS ----------------
-
     private void Capture()
     {
         using (var form = new CaptureProfileForm())
@@ -298,7 +261,6 @@ public class MiniLaunchContext : ApplicationContext
 
             var name = form.ProfileName;
 
-            // ✅ CHECK FOR EXISTING (this is what you're missing)
             var existing = _profileService.GetProfileNames();
 
             if (existing.Any(p => string.Equals(p, name, StringComparison.OrdinalIgnoreCase)))
@@ -316,13 +278,10 @@ public class MiniLaunchContext : ApplicationContext
             var profile = _profileService.CaptureProfile();
             _profileService.SaveProfile(profile, name);
 
-            // 🔥 Set default ONLY if none exists
             Directory.CreateDirectory(AppDataDir);
 
             if (!File.Exists(DefaultProfilePath))
-            {
                 File.WriteAllText(DefaultProfilePath, name);
-            }
 
             RefreshMenu();
 
@@ -330,8 +289,7 @@ public class MiniLaunchContext : ApplicationContext
                 $"Profile '{name}' captured.",
                 "MiniLaunch",
                 MessageBoxButtons.OK,
-                MessageBoxIcon.Information
-            );
+                MessageBoxIcon.Information);
         }
     }
 
@@ -344,12 +302,8 @@ public class MiniLaunchContext : ApplicationContext
         }
         catch (Exception ex)
         {
-            MessageBox.Show(
-                ex.Message,
-                "MiniLaunch Error",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Error
-            );
+            MessageBox.Show(ex.Message, "MiniLaunch Error",
+                MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 
@@ -376,7 +330,6 @@ public class MiniLaunchContext : ApplicationContext
             if (result != DialogResult.Yes)
                 return;
 
-            // 🔥 Delete existing BEFORE rename (important)
             _profileService.DeleteProfile(match);
         }
 
@@ -384,15 +337,12 @@ public class MiniLaunchContext : ApplicationContext
         {
             _profileService.RenameProfile(oldName, newName);
 
-            // 🔥 Update default if needed
             if (File.Exists(DefaultProfilePath))
             {
                 var current = File.ReadAllText(DefaultProfilePath);
 
                 if (string.Equals(current, oldName, StringComparison.OrdinalIgnoreCase))
-                {
                     File.WriteAllText(DefaultProfilePath, newName);
-                }
             }
 
             RefreshMenu();
@@ -409,8 +359,7 @@ public class MiniLaunchContext : ApplicationContext
             $"Delete profile '{name}'?",
             "Confirm Delete",
             MessageBoxButtons.YesNo,
-            MessageBoxIcon.Warning
-        );
+            MessageBoxIcon.Warning);
 
         if (result != DialogResult.Yes)
             return;
@@ -419,15 +368,12 @@ public class MiniLaunchContext : ApplicationContext
         {
             _profileService.DeleteProfile(name);
 
-            // 🔥 Clean default if deleted
             if (File.Exists(DefaultProfilePath))
             {
                 var current = File.ReadAllText(DefaultProfilePath);
 
                 if (current == name)
-                {
                     File.Delete(DefaultProfilePath);
-                }
             }
 
             RefreshMenu();
@@ -440,66 +386,23 @@ public class MiniLaunchContext : ApplicationContext
 
     private void ShowAbout()
     {
-        var about = new AboutForm();
-        about.ShowDialog();
+        new AboutForm().ShowDialog();
     }
 
     private string GetSupportedAppsText()
     {
         var apps = _profileService.GetSupportedAppNames();
-
         return "Supported Applications:\n- " + string.Join("\n- ", apps);
     }
 
+    // 🔥 UPDATED HELP METHOD
     private void ShowHelp()
     {
         var supportedApps = GetSupportedAppsText();
 
-        var text =
-    $@"MiniLaunch Help
+        var text = HelpContent.Get(supportedApps);
 
-{supportedApps}
-
-Capture a Profile:
-- Open the apps you want to include
-- Right-click tray → Profiles → Capture Profile
-- Only currently running supported apps are captured
-- Window size, position, and monitor are saved
-
-Run a Profile:
-- Right-click tray → Profiles → Run
-- Or double-click the tray icon (runs default profile)
-
-Default Profile:
-- First captured profile becomes default
-- Change via: Profiles → Set as Default
-
-Advanced Configuration:
-- Profiles can be edited manually
-- Open the Profiles folder from the About dialog
-- Each profile is a JSON file
-
-You can customize things like:
-- File paths (Explorer, Notepad++, etc.)
-- URLs (Chrome)
-- Terminal starting directories
-- Notepad++ sessions
-- Visual Studio solution paths
-
-Note:
-- Capture does NOT detect tabs, sessions, or internal app state
-- Only window layout is captured automatically
-- Advanced behavior must be configured manually in the profile JSON
-
-Location:
-%LOCALAPPDATA%\MiniLaunch\Profiles";
-
-        MessageBox.Show(
-            text,
-            "MiniLaunch Help",
-            MessageBoxButtons.OK,
-            MessageBoxIcon.None
-        );
+        new HelpForm(text).ShowDialog();
     }
 
     private void Exit()
