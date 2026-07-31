@@ -1,9 +1,12 @@
-using System.Reflection;
-using System.Threading;
-using System.Windows.Forms;
+using MiniLaunch; // ✅ NEW
 using MiniLaunch.Profiles;
 using MiniLaunch.UI;
-using MiniLaunch; // ✅ NEW
+using System.Diagnostics;
+using System.Reflection;
+using System.Reflection.Metadata;
+using System.Threading;
+using System.Windows.Forms;
+using MiniLaunch.Core;
 
 internal static class Program
 {
@@ -44,6 +47,8 @@ internal static class Program
 
         try
         {
+            SetupLogging();
+
             ApplicationConfiguration.Initialize();
 
             var modules = Assembly.GetExecutingAssembly()
@@ -61,6 +66,47 @@ internal static class Program
         catch (Exception ex)
         {
             HandleException(ex);
+        }
+    }
+
+    // ---------------- SETUP LOG FILE ----------------
+
+    private static void SetupLogging()
+    {
+        try
+        {
+            string folder = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "MiniLaunch");
+
+            Directory.CreateDirectory(folder);
+
+            string logFile = Path.Combine(folder, "debug.log");
+            string prevFile = Path.Combine(folder, "debug.prev.log");
+
+            const long maxSize = 1_048_576; // 1 MB
+
+            if (File.Exists(logFile))
+            {
+                var info = new FileInfo(logFile);
+
+                if (info.Length > maxSize)
+                {
+                    if (File.Exists(prevFile))
+                        File.Delete(prevFile);
+
+                    File.Move(logFile, prevFile);
+                }
+            }
+
+            // ✅ ONLY write a simple startup marker
+            Log.Write("========================================");
+            Log.Write($"MiniLaunch START {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+            Log.Write("========================================");
+        }
+        catch
+        {
+            // never crash
         }
     }
 

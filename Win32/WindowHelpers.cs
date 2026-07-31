@@ -5,6 +5,7 @@ using System.Threading;
 using System.Drawing;
 using System.Windows.Forms;
 using System.Text;
+using MiniLaunch.Core; // 🔥 NEW
 
 public static class WindowHelpers
 {
@@ -32,6 +33,10 @@ public static class WindowHelpers
 
     public static void MoveWindow(IntPtr handle, int x, int y, int width, int height, bool maximized = false)
     {
+        Log.Write(
+            $"MOVE   | HWND={handle} | {width}x{height} @ ({x},{y}) | MAX={maximized}"
+        );
+
         SetWindowPos(
             handle,
             IntPtr.Zero,
@@ -60,7 +65,7 @@ public static class WindowHelpers
 
     public static void DebugForegroundWindow()
     {
-        Trace.WriteLine("==== CAPTURE START ====");
+        Log.Write("CAPTURE | START");
         DebugWindow("FOREGROUND", GetForegroundWindow());
     }
 
@@ -70,7 +75,7 @@ public static class WindowHelpers
     {
         if (hWnd == IntPtr.Zero)
         {
-            Trace.WriteLine($"{label} → NULL HANDLE");
+            Log.Write($"WINDOW | {label} | NULL HANDLE");
             return;
         }
 
@@ -89,7 +94,7 @@ public static class WindowHelpers
 
         if (!TryGetWindowRect(hWnd, out var r))
         {
-            Trace.WriteLine($"{label} → HWND={hWnd} | FAILED RECT");
+            Log.Write($"WINDOW | {label} | HWND={hWnd} | RECT FAILED");
             return;
         }
 
@@ -100,10 +105,10 @@ public static class WindowHelpers
 
         int monitor = GetMonitorIndexFromWindow(hWnd);
 
-        string fgTag = IsForeground(hWnd) ? " [FOREGROUND]" : "";
+        string fgTag = IsForeground(hWnd) ? " | FG" : "";
 
-        Trace.WriteLine(
-            $"{label}{fgTag} → HWND={hWnd} | PID={pid} | PROC={procName} | CLASS={className} | MON={monitor} | {w}x{h} @ ({x},{y})"
+        Log.Write(
+            $"WINDOW | {label}{fgTag} | HWND={hWnd} | PID={pid} | PROC={procName} | CLASS={className} | MON={monitor} | {w}x{h} @ ({x},{y})"
         );
     }
 
@@ -111,25 +116,25 @@ public static class WindowHelpers
 
     public static void DebugLaunchAttempt(string appType, int attempt)
     {
-        Trace.WriteLine($"{appType.ToUpper()} scan attempt {attempt}");
+        Log.Write($"LAUNCH | {appType} | attempt={attempt}");
     }
 
     public static void DebugLaunchFailure(string appType)
     {
-        Trace.WriteLine($"❌ {appType.ToUpper()} window NOT found after launch");
+        Log.Write($"ERROR  | {appType} | window not found after launch");
     }
 
     public static void DebugBeforeCount(string appType, int count)
     {
-        Trace.WriteLine($"{appType.ToUpper()} BEFORE count = {count}");
+        Log.Write($"LAUNCH | {appType} | existing_windows={count}");
     }
 
     // ---------------- APPLY DEBUG ----------------
 
     public static void DebugApply(string appType, int monitor, int x, int y, int width, int height, bool maximized)
     {
-        Trace.WriteLine(
-            $"APPLY → {appType} | MON={monitor} | {width}x{height} @ ({x},{y}) | MAX={maximized}"
+        Log.Write(
+            $"APPLY  | {appType} | MON={monitor} | {width}x{height} @ ({x},{y}) | MAX={maximized}"
         );
     }
 
