@@ -162,6 +162,27 @@ public class ProfileService
         File.Delete(path);
     }
 
+    // ------------------ EDIT ------------------
+
+    public void EditProfile(string name)
+    {
+        var path = GetProfilePath(name);
+
+        if (!File.Exists(path))
+        {
+            Trace.WriteLine($"Edit failed: Profile not found → {path}");
+            return;
+        }
+
+        Trace.WriteLine($"Opening profile for edit → {path}");
+
+        Process.Start(new ProcessStartInfo
+        {
+            FileName = path,
+            UseShellExecute = true // 🔥 required to open with default editor
+        });
+    }
+
     // ----------------- PATH HELPER -----------------
 
     private string GetProfilePath(string name)

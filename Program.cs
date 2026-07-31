@@ -244,6 +244,7 @@ public class MiniLaunchContext : ApplicationContext
             Run,
             RenameProfile,
             DeleteProfile,
+            _profileService.EditProfile,
             ShowAbout,
             ShowHelp,
             Exit

@@ -12,6 +12,7 @@ public class TrayMenuBuilder
     private readonly Action<string> _run;
     private readonly Action<string> _rename;
     private readonly Action<string> _delete;
+    private readonly Action<string> _edit; // 🔥 NEW
     private readonly Action _showHelp;
     private readonly Action _showAbout;
     private readonly Action _exit;
@@ -24,7 +25,6 @@ public class TrayMenuBuilder
     private static string DefaultProfilePath =>
         Path.Combine(AppDataDir, "default_profile.txt");
 
-    // 🔥 SAME FLAG PATH USED BY CONTEXT
     private static string SuppressFlagPath =>
         Path.Combine(Path.GetTempPath(), "MiniLaunch_suppress_startup.flag");
 
@@ -34,6 +34,7 @@ public class TrayMenuBuilder
         Action<string> run,
         Action<string> rename,
         Action<string> delete,
+        Action<string> edit, // 🔥 NEW
         Action showAbout,
         Action showHelp,
         Action exit)
@@ -43,6 +44,7 @@ public class TrayMenuBuilder
         _run = run;
         _rename = rename;
         _delete = delete;
+        _edit = edit; // 🔥 NEW
         _showAbout = showAbout;
         _showHelp = showHelp;
         _exit = exit;
@@ -54,7 +56,6 @@ public class TrayMenuBuilder
 
         var profiles = _profileService.GetProfileNames();
 
-        // 🔥 Load current default
         string? currentDefault = null;
 
         if (File.Exists(DefaultProfilePath))
@@ -94,6 +95,25 @@ public class TrayMenuBuilder
         }
 
         profilesMenu.DropDownItems.Add(runMenu);
+
+        // -------- EDIT (🔥 NEW) --------
+        var editMenu = new ToolStripMenuItem("Edit");
+
+        if (profiles.Count == 0)
+        {
+            editMenu.DropDownItems.Add(new ToolStripMenuItem("(No profiles)") { Enabled = false });
+        }
+        else
+        {
+            foreach (var name in profiles)
+            {
+                editMenu.DropDownItems.Add(
+                    new ToolStripMenuItem(name, null, (_, _) => _edit(name))
+                );
+            }
+        }
+
+        profilesMenu.DropDownItems.Add(editMenu);
 
         // -------- RENAME --------
         var renameMenu = new ToolStripMenuItem("Rename");
@@ -160,6 +180,7 @@ public class TrayMenuBuilder
         }
 
         profilesMenu.DropDownItems.Add(new ToolStripSeparator());
+
         profilesMenu.DropDownItems.Add(defaultMenu);
 
         menu.Items.Add(profilesMenu);
@@ -167,7 +188,6 @@ public class TrayMenuBuilder
         // ---------------- SETTINGS ----------------
         var settingsMenu = new ToolStripMenuItem("Settings", AppIcons.Settings.ToBitmap());
 
-        // ---------------- STARTUP ----------------
         bool isEnabled = StartupManager.IsEnabled();
 
         var startupMenu = new ToolStripMenuItem("Startup With Windows");
@@ -217,20 +237,16 @@ public class TrayMenuBuilder
 
         menu.Items.Add(settingsMenu);
 
-        // ---------------- SEPARATOR ----------------
         menu.Items.Add(new ToolStripSeparator());
 
-        // ---------------- HELP ----------------
         menu.Items.Add(
             new ToolStripMenuItem("Help", AppIcons.Help.ToBitmap(), (_, _) => _showHelp())
         );
 
-        // ---------------- ABOUT ----------------
         menu.Items.Add(
             new ToolStripMenuItem("About", AppIcons.About.ToBitmap(), (_, _) => _showAbout())
         );
 
-        // ---------------- EXIT ----------------
         menu.Items.Add(
             new ToolStripMenuItem("Exit", AppIcons.Exit.ToBitmap(), (_, _) => _exit())
         );
