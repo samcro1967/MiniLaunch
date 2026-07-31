@@ -70,12 +70,17 @@ public partial class AboutForm : Form
         object sender,
         LinkLabelLinkClickedEventArgs e)
     {
-        ProfilePaths.Ensure();
+        var appPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "MiniLaunch"
+        );
+
+        Directory.CreateDirectory(appPath); // ensure it exists
 
         Process.Start(
             new ProcessStartInfo
             {
-                FileName = ProfilePaths.ProfilesDir,
+                FileName = appPath,
                 UseShellExecute = true
             });
     }

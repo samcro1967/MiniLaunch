@@ -68,7 +68,7 @@ namespace MiniLaunch.UI
             // lnkSettingsFolder
             lnkSettingsFolder.AutoSize = true;
             lnkSettingsFolder.Location = new Point(98, 329);
-            lnkSettingsFolder.Text = "Open Profiles Folder";
+            lnkSettingsFolder.Text = "Open App Folder";
             lnkSettingsFolder.LinkClicked += lnkSettingsFolder_LinkClicked;
 
             // lnkLicense (optional – keep or remove)
