@@ -23,14 +23,24 @@ public static class Log
 
     private static bool _initialized = false;
 
+    // ---------------- BASIC WRITE ----------------
+
     public static void Write(string message)
     {
         try
         {
+            // 🔒 Defensive: never allow null
+            message ??= string.Empty;
+
+            // ⏱ Timestamp first
             var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
 
+            // ✂️ Truncate overly long messages
             if (message.Length > 2000)
                 message = message.Substring(0, 2000) + "...";
+
+            // 🧼 Normalize whitespace
+            message = message.Trim();
 
             var line = $"{timestamp} | {message}";
 
@@ -47,13 +57,36 @@ public static class Log
                 File.AppendAllText(_logFile, line + Environment.NewLine);
             }
 
-            System.Diagnostics.Trace.WriteLine(line); // still shows in VS
+            // 👀 Visible in Visual Studio Output (Debug mode)
+            Debug.WriteLine(line);
         }
         catch
         {
-            // never crash app due to logging
+            // 🚫 Never crash app due to logging
         }
     }
+
+    // ---------------- CATEGORY WRITE ----------------
+
+    public static void WriteCategory(string category, string message)
+    {
+        try
+        {
+            // 🔒 Normalize category (safe + consistent)
+            string padded = (category ?? string.Empty)
+                .Trim()
+                .ToUpper()
+                .PadRight(7);
+
+            Write($"{padded} | {message}");
+        }
+        catch
+        {
+            // 🚫 Never crash app due to logging
+        }
+    }
+
+    // ---------------- ROTATION ----------------
 
     private static void RotateIfNeeded()
     {

@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using System.Linq;
-using System.Threading;
-using System.Windows.Forms;
+using MiniLaunch.Core;
 
 public class NotepadApp : IAppModule
 {
@@ -19,42 +18,16 @@ public class NotepadApp : IAppModule
             .FirstOrDefault(p => p.MainWindowHandle != IntPtr.Zero);
 
         if (proc == null)
-            return false;
-
-        var handle = proc.MainWindowHandle;
-
-        if (handle == IntPtr.Zero)
-            return false;
-
-        WindowHelpers.DebugWindow("NOTEPAD CAPTURE", handle);
-
-        if (!WindowHelpers.TryGetWindowRect(handle, out var rect))
         {
-            WindowHelpers.DebugWindow("NOTEPAD RECT FAILED", handle);
+            Log.WriteCategory("CAPTURE", "notepad | no window found");
             return false;
         }
 
-        WindowHelpers.DebugWindow("NOTEPAD FINAL", handle);
-
-        // 🔥 NEW: RELATIVE CAPTURE
-        var screen = Screen.FromHandle(handle);
-        int monitorIndex = Array.IndexOf(Screen.AllScreens, screen);
-
-        int relativeX = rect.Left - screen.Bounds.Left;
-        int relativeY = rect.Top - screen.Bounds.Top;
-
-        app = new AppConfig
-        {
-            Type = Type,
-            X = relativeX,
-            Y = relativeY,
-            Width = rect.Right - rect.Left,
-            Height = rect.Bottom - rect.Top,
-            Maximized = false,
-            Monitor = monitorIndex
-        };
-
-        return true;
+        return WindowCaptureHelper.TryCaptureWindow(
+            type: Type,
+            handle: proc.MainWindowHandle,
+            out app
+        );
     }
 
     // ----------------- ENRICH -----------------
@@ -70,94 +43,37 @@ public class NotepadApp : IAppModule
     {
         string exe = ResolveNotepadPath();
 
-        var before = Process.GetProcessesByName("notepad++")
-            .Where(p => p.MainWindowHandle != IntPtr.Zero)
-            .Select(p => p.MainWindowHandle)
-            .ToHashSet();
+        string args = string.IsNullOrWhiteSpace(app.Session)
+            ? ""
+            : $"-openSession \"{app.Session}\"";
 
-        WindowHelpers.DebugBeforeCount(Type, before.Count);
+        WindowLaunchHelper.LaunchAndPosition(
+            type: Type,
 
-        Process? process;
+            getExistingWindows: () =>
+                Process.GetProcessesByName("notepad++")
+                    .Where(p => p.MainWindowHandle != IntPtr.Zero)
+                    .Select(p => p.MainWindowHandle)
+                    .ToHashSet(),
 
-        if (!string.IsNullOrWhiteSpace(app.Session))
-        {
-            process = Process.Start(exe, $"-openSession \"{app.Session}\"");
-        }
-        else
-        {
-            process = Process.Start(exe);
-        }
+            getCurrentWindows: () =>
+                Process.GetProcessesByName("notepad++")
+                    .Where(p => p.MainWindowHandle != IntPtr.Zero)
+                    .Select(p => p.MainWindowHandle)
+                    .ToList(),
 
-        if (process == null)
-            return;
+            startProcess: () =>
+            {
+                var process = Process.Start(exe, args);
 
-        IntPtr handle = IntPtr.Zero;
+                if (process == null)
+                {
+                    Log.WriteCategory("LAUNCH", "notepad | failed to start process");
+                }
+            },
 
-        for (int i = 0; i < 30; i++)
-        {
-            WindowHelpers.DebugLaunchAttempt(Type, i);
-
-            var after = Process.GetProcessesByName("notepad++")
-                .Where(p => p.MainWindowHandle != IntPtr.Zero)
-                .Select(p => p.MainWindowHandle)
-                .ToList();
-
-            handle = after.FirstOrDefault(h => !before.Contains(h));
-
-            if (handle != IntPtr.Zero)
-                break;
-
-            Thread.Sleep(100);
-        }
-
-        if (handle == IntPtr.Zero)
-        {
-            Thread.Sleep(500);
-
-            var np = Process.GetProcessesByName("notepad++")
-                .FirstOrDefault(p => p.MainWindowHandle != IntPtr.Zero);
-
-            if (np != null)
-                handle = np.MainWindowHandle;
-        }
-
-        if (handle != IntPtr.Zero)
-        {
-            WindowHelpers.DebugWindow("NOTEPAD LAUNCH HANDLE", handle);
-
-            // 🔥 NEW: CONVERT TO ABSOLUTE
-            var screen = Screen.AllScreens[app.Monitor];
-
-            int finalX = screen.Bounds.Left + app.X;
-            int finalY = screen.Bounds.Top + app.Y;
-
-            WindowHelpers.DebugApply(
-                app.Type,
-                app.Monitor,
-                app.X,
-                app.Y,
-                app.Width,
-                app.Height,
-                app.Maximized
-            );
-
-            WindowHelpers.MoveWindow(
-                handle,
-                finalX,
-                finalY,
-                app.Width,
-                app.Height,
-                app.Maximized
-            );
-
-            Thread.Sleep(100);
-
-            WindowHelpers.DebugWindow("NOTEPAD AFTER MOVE", handle);
-        }
-        else
-        {
-            WindowHelpers.DebugLaunchFailure(Type);
-        }
+            app: app
+        );
     }
 
     private string ResolveNotepadPath()

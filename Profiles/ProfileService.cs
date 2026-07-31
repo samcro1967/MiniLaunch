@@ -2,6 +2,7 @@ using MiniLaunch.Profiles;
 using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using MiniLaunch.Core;
 
 public class ProfileService
 {
@@ -75,7 +76,7 @@ public class ProfileService
 
         File.WriteAllText(path, json);
 
-        Trace.WriteLine($"Profile saved: {path}");
+        Log.WriteCategory("PROFILE", $"saved | {path}");
     }
 
     // ----------------- LOAD -----------------
@@ -86,7 +87,7 @@ public class ProfileService
 
         if (!File.Exists(path))
         {
-            Trace.WriteLine($"Profile not found: {path}");
+            Log.WriteCategory("WARN", $"profile not found | {path}");
             return new Profile();
         }
 
@@ -107,12 +108,9 @@ public class ProfileService
     {
         foreach (var app in profile.Apps)
         {
-            // 🔥 LOG WHAT WE READ FROM JSON (CONFIG)
-            Trace.WriteLine(
-                $"CONFIG → {app.Type} | MON={app.Monitor} | {app.Width}x{app.Height} @ ({app.X},{app.Y})"
-            );
-
-            Trace.WriteLine($"Launching {app.Type}");
+            // ✅ CONFIG logging (structured + consistent)
+            Log.WriteCategory("CONFIG",
+                $"{app.Type} | MON={app.Monitor} | REL_POS=({app.X},{app.Y}) | SIZE={app.Width}x{app.Height}");
 
             var module = _modules.FirstOrDefault(m => m.Type == app.Type);
 
@@ -122,7 +120,7 @@ public class ProfileService
             }
             else
             {
-                Trace.WriteLine($"No module for {app.Type}");
+                Log.WriteCategory("ERROR", $"{app.Type} | no module found");
             }
 
             if (app.Delay > 0)
@@ -170,11 +168,11 @@ public class ProfileService
 
         if (!File.Exists(path))
         {
-            Trace.WriteLine($"Edit failed: Profile not found → {path}");
+            Log.WriteCategory("ERROR", $"edit failed | not found | {path}");
             return;
         }
 
-        Trace.WriteLine($"Opening profile for edit → {path}");
+        Log.WriteCategory("PROFILE", $"open editor | {path}");
 
         Process.Start(new ProcessStartInfo
         {

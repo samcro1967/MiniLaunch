@@ -2,10 +2,9 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
-using System.Drawing;
 using System.Windows.Forms;
 using System.Text;
-using MiniLaunch.Core; // 🔥 NEW
+using MiniLaunch.Core;
 
 public static class WindowHelpers
 {
@@ -33,9 +32,8 @@ public static class WindowHelpers
 
     public static void MoveWindow(IntPtr handle, int x, int y, int width, int height, bool maximized = false)
     {
-        Log.Write(
-            $"MOVE   | HWND={handle} | {width}x{height} @ ({x},{y}) | MAX={maximized}"
-        );
+        Log.WriteCategory("MOVE",
+            $"HWND={handle} | ABS_POS=({x},{y}) | SIZE={width}x{height} | MAX={maximized}");
 
         SetWindowPos(
             handle,
@@ -65,17 +63,17 @@ public static class WindowHelpers
 
     public static void DebugForegroundWindow()
     {
-        Log.Write("CAPTURE | START");
+        Log.WriteCategory("CAPTURE", "START");
         DebugWindow("FOREGROUND", GetForegroundWindow());
     }
 
-    // ---------------- CAPTURE DEBUG ----------------
+    // ---------------- WINDOW DEBUG ----------------
 
     public static void DebugWindow(string label, IntPtr hWnd)
     {
         if (hWnd == IntPtr.Zero)
         {
-            Log.Write($"WINDOW | {label} | NULL HANDLE");
+            Log.WriteCategory("WINDOW", $"{label} | NULL HANDLE");
             return;
         }
 
@@ -94,7 +92,7 @@ public static class WindowHelpers
 
         if (!TryGetWindowRect(hWnd, out var r))
         {
-            Log.Write($"WINDOW | {label} | HWND={hWnd} | RECT FAILED");
+            Log.WriteCategory("WINDOW", $"{label} | HWND={hWnd} | RECT FAILED");
             return;
         }
 
@@ -107,35 +105,42 @@ public static class WindowHelpers
 
         string fgTag = IsForeground(hWnd) ? " | FG" : "";
 
-        Log.Write(
-            $"WINDOW | {label}{fgTag} | HWND={hWnd} | PID={pid} | PROC={procName} | CLASS={className} | MON={monitor} | {w}x{h} @ ({x},{y})"
-        );
+        Log.WriteCategory("WINDOW",
+            $"{label}{fgTag} | HWND={hWnd} | PID={pid} | PROC={procName} | CLASS={className} | MON={monitor} | {w}x{h} @ ({x},{y})");
     }
 
     // ---------------- LAUNCH DEBUG ----------------
 
     public static void DebugLaunchAttempt(string appType, int attempt)
     {
-        Log.Write($"LAUNCH | {appType} | attempt={attempt}");
+        Log.WriteCategory("LAUNCH", $"{appType} | attempt={attempt}");
     }
 
     public static void DebugLaunchFailure(string appType)
     {
-        Log.Write($"ERROR  | {appType} | window not found after launch");
+        Log.WriteCategory("ERROR", $"{appType} | window not found after launch");
     }
 
     public static void DebugBeforeCount(string appType, int count)
     {
-        Log.Write($"LAUNCH | {appType} | existing_windows={count}");
+        Log.WriteCategory("LAUNCH", $"{appType} | existing_windows={count}");
     }
 
     // ---------------- APPLY DEBUG ----------------
 
-    public static void DebugApply(string appType, int monitor, int x, int y, int width, int height, bool maximized)
+    public static void DebugApply(
+        string appType,
+        int monitor,
+        int relX,
+        int relY,
+        int absX,
+        int absY,
+        int width,
+        int height,
+        bool maximized)
     {
-        Log.Write(
-            $"APPLY  | {appType} | MON={monitor} | {width}x{height} @ ({x},{y}) | MAX={maximized}"
-        );
+        Log.WriteCategory("APPLY",
+            $"{appType} | MON={monitor} | REL_POS=({relX},{relY}) | ABS_POS=({absX},{absY}) | SIZE={width}x{height} | MAX={maximized}");
     }
 
     // ---------------- WINDOW RECT ----------------
@@ -204,7 +209,6 @@ public static class WindowHelpers
     public static extern bool EnumWindows(EnumWindowsProc lpEnumFunc, IntPtr lParam);
 
     [DllImport("user32.dll", EntryPoint = "IsWindowVisible")]
-    [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool IsWindowVisibleNative(IntPtr hWnd);
 
     public static bool IsWindowVisible(IntPtr handle)

@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using System.Linq;
-using System.Threading;
 using System.Windows.Forms;
+using MiniLaunch.Core;
 
 public class ExplorerApp : IAppModule
 {
@@ -59,39 +59,18 @@ public class ExplorerApp : IAppModule
 
         if (selected == IntPtr.Zero)
         {
-            WindowHelpers.DebugWindow("EXPLORER SELECTED", selected);
+            Log.WriteCategory("CAPTURE", "explorer | no valid window found");
             return false;
         }
 
         WindowHelpers.DebugWindow("EXPLORER SELECTED", selected);
 
-        if (!WindowHelpers.TryGetWindowRect(selected, out var rect))
-        {
-            WindowHelpers.DebugWindow("EXPLORER FINAL FAILED", selected);
-            return false;
-        }
-
-        WindowHelpers.DebugWindow("EXPLORER FINAL", selected);
-
-        // 🔥 NEW: RELATIVE CAPTURE
-        var screen = Screen.FromHandle(selected);
-        int monitorIndex = Array.IndexOf(Screen.AllScreens, screen);
-
-        int relativeX = rect.Left - screen.Bounds.Left;
-        int relativeY = rect.Top - screen.Bounds.Top;
-
-        app = new AppConfig
-        {
-            Type = Type,
-            X = relativeX,
-            Y = relativeY,
-            Width = rect.Right - rect.Left,
-            Height = rect.Bottom - rect.Top,
-            Maximized = false,
-            Monitor = monitorIndex
-        };
-
-        return true;
+        // 🔥 Delegate to shared helper
+        return WindowCaptureHelper.TryCaptureWindow(
+            type: Type,
+            handle: selected,
+            out app
+        );
     }
 
     // ----------------- ENRICH -----------------
@@ -105,115 +84,64 @@ public class ExplorerApp : IAppModule
 
     public void Launch(AppConfig app)
     {
-        var before = new HashSet<IntPtr>();
+        WindowLaunchHelper.LaunchAndPosition(
+            type: Type,
 
-        WindowHelpers.EnumWindows((hWnd, lParam) =>
-        {
-            if (!WindowHelpers.IsWindowVisible(hWnd))
-                return true;
-
-            var className = WindowHelpers.GetWindowClassName(hWnd);
-
-            if (className.Equals("CabinetWClass", StringComparison.OrdinalIgnoreCase))
+            getExistingWindows: () =>
             {
-                before.Add(hWnd);
-            }
+                var set = new HashSet<IntPtr>();
 
-            return true;
-
-        }, IntPtr.Zero);
-
-        WindowHelpers.DebugBeforeCount(Type, before.Count);
-
-        Process.Start(new ProcessStartInfo
-        {
-            FileName = "explorer.exe",
-            Arguments = string.IsNullOrWhiteSpace(app.Path)
-                ? "/n"
-                : $"/n, \"{app.Path}\"",
-            UseShellExecute = true
-        });
-
-        IntPtr handle = IntPtr.Zero;
-
-        for (int i = 0; i < 30; i++)
-        {
-            WindowHelpers.DebugLaunchAttempt(Type, i);
-
-            WindowHelpers.EnumWindows((hWnd, lParam) =>
-            {
-                if (!WindowHelpers.IsWindowVisible(hWnd))
-                    return true;
-
-                var className = WindowHelpers.GetWindowClassName(hWnd);
-
-                if (!className.Equals("CabinetWClass", StringComparison.OrdinalIgnoreCase))
-                    return true;
-
-                if (!before.Contains(hWnd))
+                WindowHelpers.EnumWindows((hWnd, lParam) =>
                 {
-                    handle = hWnd;
-                    return false;
-                }
+                    if (!WindowHelpers.IsWindowVisible(hWnd))
+                        return true;
 
-                return true;
+                    var className = WindowHelpers.GetWindowClassName(hWnd);
 
-            }, IntPtr.Zero);
+                    if (className.Equals("CabinetWClass", StringComparison.OrdinalIgnoreCase))
+                        set.Add(hWnd);
 
-            if (handle != IntPtr.Zero)
-                break;
+                    return true;
 
-            Thread.Sleep(100);
-        }
+                }, IntPtr.Zero);
 
-        if (handle != IntPtr.Zero)
-        {
-            WindowHelpers.DebugWindow("EXPLORER LAUNCH HANDLE", handle);
+                return set;
+            },
 
-            // 🔥 NEW: CONVERT TO ABSOLUTE
-            var screen = Screen.AllScreens[app.Monitor];
+            getCurrentWindows: () =>
+            {
+                var list = new List<IntPtr>();
 
-            int finalX = screen.Bounds.Left + app.X;
-            int finalY = screen.Bounds.Top + app.Y;
+                WindowHelpers.EnumWindows((hWnd, lParam) =>
+                {
+                    if (!WindowHelpers.IsWindowVisible(hWnd))
+                        return true;
 
-            WindowHelpers.DebugApply(
-                app.Type,
-                app.Monitor,
-                app.X,
-                app.Y,
-                app.Width,
-                app.Height,
-                app.Maximized
-            );
+                    var className = WindowHelpers.GetWindowClassName(hWnd);
 
-            WindowHelpers.MoveWindow(
-                handle,
-                finalX,
-                finalY,
-                app.Width,
-                app.Height,
-                app.Maximized
-            );
+                    if (className.Equals("CabinetWClass", StringComparison.OrdinalIgnoreCase))
+                        list.Add(hWnd);
 
-            Thread.Sleep(200);
+                    return true;
 
-            // 🔥 Explorer override protection
-            WindowHelpers.MoveWindow(
-                handle,
-                finalX,
-                finalY,
-                app.Width,
-                app.Height,
-                app.Maximized
-            );
+                }, IntPtr.Zero);
 
-            Thread.Sleep(100);
+                return list;
+            },
 
-            WindowHelpers.DebugWindow("EXPLORER AFTER MOVE", handle);
-        }
-        else
-        {
-            WindowHelpers.DebugLaunchFailure(Type);
-        }
+            startProcess: () =>
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = "explorer.exe",
+                    Arguments = string.IsNullOrWhiteSpace(app.Path)
+                        ? "/n"
+                        : $"/n, \"{app.Path}\"",
+                    UseShellExecute = true
+                }),
+
+            app: app,
+
+            doubleMove: true // 🔥 Explorer needs this
+        );
     }
 }

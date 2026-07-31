@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Linq;
 using System.Threading;
-using System.Windows.Forms;
+using MiniLaunch.Core;
 
 public class VisualStudioApp : IAppModule
 {
@@ -19,42 +19,16 @@ public class VisualStudioApp : IAppModule
             .FirstOrDefault(p => p.MainWindowHandle != IntPtr.Zero);
 
         if (proc == null)
-            return false;
-
-        var handle = proc.MainWindowHandle;
-
-        if (handle == IntPtr.Zero)
-            return false;
-
-        WindowHelpers.DebugWindow("VS CAPTURE", handle);
-
-        if (!WindowHelpers.TryGetWindowRect(handle, out var rect))
         {
-            WindowHelpers.DebugWindow("VS RECT FAILED", handle);
+            Log.WriteCategory("CAPTURE", "visualstudio | no window found");
             return false;
         }
 
-        WindowHelpers.DebugWindow("VS FINAL", handle);
-
-        // 🔥 NEW: RELATIVE CAPTURE
-        var screen = Screen.FromHandle(handle);
-        int monitorIndex = Array.IndexOf(Screen.AllScreens, screen);
-
-        int relativeX = rect.Left - screen.Bounds.Left;
-        int relativeY = rect.Top - screen.Bounds.Top;
-
-        app = new AppConfig
-        {
-            Type = Type,
-            X = relativeX,
-            Y = relativeY,
-            Width = rect.Right - rect.Left,
-            Height = rect.Bottom - rect.Top,
-            Maximized = false,
-            Monitor = monitorIndex
-        };
-
-        return true;
+        return WindowCaptureHelper.TryCaptureWindow(
+            type: Type,
+            handle: proc.MainWindowHandle,
+            out app
+        );
     }
 
     // ----------------- ENRICH -----------------
@@ -79,16 +53,24 @@ public class VisualStudioApp : IAppModule
 
         WindowHelpers.DebugBeforeCount(Type, before.Count);
 
-        Process.Start(new ProcessStartInfo
+        Log.WriteCategory("LAUNCH", "visualstudio | starting");
+
+        var process = Process.Start(new ProcessStartInfo
         {
             FileName = "devenv.exe",
             Arguments = args,
             UseShellExecute = true
         });
 
+        if (process == null)
+        {
+            Log.WriteCategory("LAUNCH", "visualstudio | failed to start process");
+            return;
+        }
+
         IntPtr handle = IntPtr.Zero;
 
-        // 🔥 detection loop (skip splash)
+        // 🔥 Custom detection loop (skip splash)
         for (int i = 0; i < 40; i++)
         {
             WindowHelpers.DebugLaunchAttempt(Type, i);
@@ -105,6 +87,7 @@ public class VisualStudioApp : IAppModule
 
                 var className = WindowHelpers.GetWindowClassName(h);
 
+                // ❌ Skip splash screen
                 if (className.Contains("VSSplash"))
                     continue;
 
@@ -121,6 +104,8 @@ public class VisualStudioApp : IAppModule
         // 🔥 fallback (non-splash)
         if (handle == IntPtr.Zero)
         {
+            Log.WriteCategory("LAUNCH", "visualstudio | no new window found, using fallback");
+
             var existing = Process.GetProcessesByName("devenv")
                 .FirstOrDefault(p =>
                     p.MainWindowHandle != IntPtr.Zero &&
@@ -134,7 +119,7 @@ public class VisualStudioApp : IAppModule
         {
             WindowHelpers.DebugWindow("VS LAUNCH HANDLE", handle);
 
-            // 🔥 NEW: CONVERT TO ABSOLUTE
+            // 🔥 REL → ABS conversion (standardized)
             var screen = Screen.AllScreens[app.Monitor];
 
             int finalX = screen.Bounds.Left + app.X;
@@ -145,6 +130,8 @@ public class VisualStudioApp : IAppModule
                 app.Monitor,
                 app.X,
                 app.Y,
+                finalX,
+                finalY,
                 app.Width,
                 app.Height,
                 app.Maximized

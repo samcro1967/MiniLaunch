@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using System.Linq;
-using System.Threading;
-using System.Windows.Forms;
+using MiniLaunch.Core;
 
 public class TerminalApp : IAppModule
 {
@@ -19,42 +18,16 @@ public class TerminalApp : IAppModule
             .FirstOrDefault(p => IsTerminalProcess(p) && p.MainWindowHandle != IntPtr.Zero);
 
         if (proc == null)
-            return false;
-
-        var handle = proc.MainWindowHandle;
-
-        if (handle == IntPtr.Zero)
-            return false;
-
-        WindowHelpers.DebugWindow("TERMINAL CAPTURE", handle);
-
-        if (!WindowHelpers.TryGetWindowRect(handle, out var rect))
         {
-            WindowHelpers.DebugWindow("TERMINAL RECT FAILED", handle);
+            Log.WriteCategory("CAPTURE", "terminal | no window found");
             return false;
         }
 
-        WindowHelpers.DebugWindow("TERMINAL FINAL", handle);
-
-        // 🔥 NEW: RELATIVE CAPTURE
-        var screen = Screen.FromHandle(handle);
-        int monitorIndex = Array.IndexOf(Screen.AllScreens, screen);
-
-        int relativeX = rect.Left - screen.Bounds.Left;
-        int relativeY = rect.Top - screen.Bounds.Top;
-
-        app = new AppConfig
-        {
-            Type = Type,
-            X = relativeX,
-            Y = relativeY,
-            Width = rect.Right - rect.Left,
-            Height = rect.Bottom - rect.Top,
-            Maximized = false,
-            Monitor = monitorIndex
-        };
-
-        return true;
+        return WindowCaptureHelper.TryCaptureWindow(
+            type: Type,
+            handle: proc.MainWindowHandle,
+            out app
+        );
     }
 
     // ----------------- ENRICH -----------------
@@ -76,97 +49,40 @@ public class TerminalApp : IAppModule
                 app.Tabs.Select(t => $"new-tab {t}"));
         }
 
-        var before = Process.GetProcesses()
-            .Where(p => IsTerminalProcess(p) && p.MainWindowHandle != IntPtr.Zero)
-            .Select(p => p.MainWindowHandle)
-            .ToHashSet();
+        WindowLaunchHelper.LaunchAndPosition(
+            type: Type,
 
-        WindowHelpers.DebugBeforeCount(Type, before.Count);
+            getExistingWindows: () =>
+                Process.GetProcesses()
+                    .Where(p => IsTerminalProcess(p) && p.MainWindowHandle != IntPtr.Zero)
+                    .Select(p => p.MainWindowHandle)
+                    .ToHashSet(),
 
-        Process.Start(new ProcessStartInfo
-        {
-            FileName = "wt",
-            Arguments = args ?? "",
-            UseShellExecute = true
-        });
+            getCurrentWindows: () =>
+                Process.GetProcesses()
+                    .Where(p => IsTerminalProcess(p) && p.MainWindowHandle != IntPtr.Zero)
+                    .Select(p => p.MainWindowHandle)
+                    .ToList(),
 
-        IntPtr handle = IntPtr.Zero;
+            startProcess: () =>
+            {
+                var process = Process.Start(new ProcessStartInfo
+                {
+                    FileName = "wt",
+                    Arguments = args ?? "",
+                    UseShellExecute = true
+                });
 
-        for (int i = 0; i < 30; i++)
-        {
-            WindowHelpers.DebugLaunchAttempt(Type, i);
+                if (process == null)
+                {
+                    Log.WriteCategory("LAUNCH", "terminal | failed to start process");
+                }
+            },
 
-            var after = Process.GetProcesses()
-                .Where(p => IsTerminalProcess(p) && p.MainWindowHandle != IntPtr.Zero)
-                .Select(p => p.MainWindowHandle)
-                .ToList();
+            app: app,
 
-            handle = after.FirstOrDefault(h => !before.Contains(h));
-
-            if (handle != IntPtr.Zero)
-                break;
-
-            Thread.Sleep(100);
-        }
-
-        if (handle == IntPtr.Zero)
-        {
-            var existing = Process.GetProcesses()
-                .FirstOrDefault(p => IsTerminalProcess(p) && p.MainWindowHandle != IntPtr.Zero);
-
-            if (existing != null)
-                handle = existing.MainWindowHandle;
-        }
-
-        if (handle != IntPtr.Zero)
-        {
-            WindowHelpers.DebugWindow("TERMINAL LAUNCH HANDLE", handle);
-
-            // 🔥 NEW: CONVERT TO ABSOLUTE
-            var screen = Screen.AllScreens[app.Monitor];
-
-            int finalX = screen.Bounds.Left + app.X;
-            int finalY = screen.Bounds.Top + app.Y;
-
-            WindowHelpers.DebugApply(
-                app.Type,
-                app.Monitor,
-                app.X,
-                app.Y,
-                app.Width,
-                app.Height,
-                app.Maximized
-            );
-
-            WindowHelpers.MoveWindow(
-                handle,
-                finalX,
-                finalY,
-                app.Width,
-                app.Height,
-                app.Maximized
-            );
-
-            Thread.Sleep(200);
-
-            // 🔥 Terminal override protection
-            WindowHelpers.MoveWindow(
-                handle,
-                finalX,
-                finalY,
-                app.Width,
-                app.Height,
-                app.Maximized
-            );
-
-            Thread.Sleep(100);
-
-            WindowHelpers.DebugWindow("TERMINAL AFTER MOVE", handle);
-        }
-        else
-        {
-            WindowHelpers.DebugLaunchFailure(Type);
-        }
+            doubleMove: true // 🔥 REQUIRED for Terminal
+        );
     }
 
     // ----------------- HELPERS -----------------
