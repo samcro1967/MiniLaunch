@@ -48,7 +48,6 @@ public class ProfileService
 
                     profile.Apps.Add(app);
 
-                    Trace.WriteLine($"Captured: {app.Type}");
                 }
             }
             catch
@@ -108,6 +107,11 @@ public class ProfileService
     {
         foreach (var app in profile.Apps)
         {
+            // 🔥 LOG WHAT WE READ FROM JSON (CONFIG)
+            Trace.WriteLine(
+                $"CONFIG → {app.Type} | MON={app.Monitor} | {app.Width}x{app.Height} @ ({app.X},{app.Y})"
+            );
+
             Trace.WriteLine($"Launching {app.Type}");
 
             var module = _modules.FirstOrDefault(m => m.Type == app.Type);

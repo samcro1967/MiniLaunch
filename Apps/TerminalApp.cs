@@ -26,19 +26,32 @@ public class TerminalApp : IAppModule
         if (handle == IntPtr.Zero)
             return false;
 
-        // 🔥 REAL WINDOW CAPTURE
+        WindowHelpers.DebugWindow("TERMINAL CAPTURE", handle);
+
         if (!WindowHelpers.TryGetWindowRect(handle, out var rect))
+        {
+            WindowHelpers.DebugWindow("TERMINAL RECT FAILED", handle);
             return false;
+        }
+
+        WindowHelpers.DebugWindow("TERMINAL FINAL", handle);
+
+        // 🔥 NEW: RELATIVE CAPTURE
+        var screen = Screen.FromHandle(handle);
+        int monitorIndex = Array.IndexOf(Screen.AllScreens, screen);
+
+        int relativeX = rect.Left - screen.Bounds.Left;
+        int relativeY = rect.Top - screen.Bounds.Top;
 
         app = new AppConfig
         {
             Type = Type,
-            X = rect.Left,
-            Y = rect.Top,
+            X = relativeX,
+            Y = relativeY,
             Width = rect.Right - rect.Left,
             Height = rect.Bottom - rect.Top,
             Maximized = false,
-            Monitor = WindowHelpers.GetMonitorIndexFromWindow(handle)
+            Monitor = monitorIndex
         };
 
         return true;
@@ -48,7 +61,6 @@ public class TerminalApp : IAppModule
 
     public void EnrichCaptured(AppConfig app)
     {
-        // ✅ Placeholder
         app.Tabs = new List<string>();
     }
 
@@ -64,11 +76,12 @@ public class TerminalApp : IAppModule
                 app.Tabs.Select(t => $"new-tab {t}"));
         }
 
-        // capture existing terminal windows BEFORE launch
         var before = Process.GetProcesses()
             .Where(p => IsTerminalProcess(p) && p.MainWindowHandle != IntPtr.Zero)
             .Select(p => p.MainWindowHandle)
             .ToHashSet();
+
+        WindowHelpers.DebugBeforeCount(Type, before.Count);
 
         Process.Start(new ProcessStartInfo
         {
@@ -77,13 +90,12 @@ public class TerminalApp : IAppModule
             UseShellExecute = true
         });
 
-        Thread.Sleep(800);
-
         IntPtr handle = IntPtr.Zero;
 
-        // find NEW window
         for (int i = 0; i < 30; i++)
         {
+            WindowHelpers.DebugLaunchAttempt(Type, i);
+
             var after = Process.GetProcesses()
                 .Where(p => IsTerminalProcess(p) && p.MainWindowHandle != IntPtr.Zero)
                 .Select(p => p.MainWindowHandle)
@@ -97,7 +109,6 @@ public class TerminalApp : IAppModule
             Thread.Sleep(100);
         }
 
-        // fallback: grab ANY terminal window
         if (handle == IntPtr.Zero)
         {
             var existing = Process.GetProcesses()
@@ -109,14 +120,52 @@ public class TerminalApp : IAppModule
 
         if (handle != IntPtr.Zero)
         {
-            WindowHelpers.MoveWindow(
-                handle,
+            WindowHelpers.DebugWindow("TERMINAL LAUNCH HANDLE", handle);
+
+            // 🔥 NEW: CONVERT TO ABSOLUTE
+            var screen = Screen.AllScreens[app.Monitor];
+
+            int finalX = screen.Bounds.Left + app.X;
+            int finalY = screen.Bounds.Top + app.Y;
+
+            WindowHelpers.DebugApply(
+                app.Type,
+                app.Monitor,
                 app.X,
                 app.Y,
                 app.Width,
                 app.Height,
                 app.Maximized
             );
+
+            WindowHelpers.MoveWindow(
+                handle,
+                finalX,
+                finalY,
+                app.Width,
+                app.Height,
+                app.Maximized
+            );
+
+            Thread.Sleep(200);
+
+            // 🔥 Terminal override protection
+            WindowHelpers.MoveWindow(
+                handle,
+                finalX,
+                finalY,
+                app.Width,
+                app.Height,
+                app.Maximized
+            );
+
+            Thread.Sleep(100);
+
+            WindowHelpers.DebugWindow("TERMINAL AFTER MOVE", handle);
+        }
+        else
+        {
+            WindowHelpers.DebugLaunchFailure(Type);
         }
     }
 

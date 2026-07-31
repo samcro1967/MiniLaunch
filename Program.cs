@@ -275,7 +275,12 @@ public class MiniLaunchContext : ApplicationContext
                     return;
             }
 
+            // 🔥 ONLY debug needed here
+            WindowHelpers.DebugForegroundWindow();
+
+            // ✅ Use central capture pipeline
             var profile = _profileService.CaptureProfile();
+
             _profileService.SaveProfile(profile, name);
 
             Directory.CreateDirectory(AppDataDir);

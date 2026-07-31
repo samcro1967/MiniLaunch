@@ -27,9 +27,20 @@ public static class WindowHelpers
 
     // ---------------- MOVE WINDOW ----------------
 
+    private const uint SWP_NOZORDER = 0x0004;
+    private const uint SWP_NOACTIVATE = 0x0010;
+
     public static void MoveWindow(IntPtr handle, int x, int y, int width, int height, bool maximized = false)
     {
-        SetWindowPos(handle, IntPtr.Zero, x, y, width, height, 0);
+        SetWindowPos(
+            handle,
+            IntPtr.Zero,
+            x,
+            y,
+            width,
+            height,
+            SWP_NOZORDER | SWP_NOACTIVATE
+        );
 
         if (maximized)
         {
@@ -42,15 +53,24 @@ public static class WindowHelpers
     [DllImport("user32.dll")]
     public static extern IntPtr GetForegroundWindow();
 
+    public static bool IsForeground(IntPtr hWnd)
+    {
+        return hWnd == GetForegroundWindow();
+    }
+
     public static void DebugForegroundWindow()
     {
-        var hWnd = GetForegroundWindow();
+        Trace.WriteLine("==== CAPTURE START ====");
+        DebugWindow("FOREGROUND", GetForegroundWindow());
+    }
 
-        Trace.WriteLine("==== FOREGROUND WINDOW ====");
+    // ---------------- CAPTURE DEBUG ----------------
 
+    public static void DebugWindow(string label, IntPtr hWnd)
+    {
         if (hWnd == IntPtr.Zero)
         {
-            Trace.WriteLine("No foreground window");
+            Trace.WriteLine($"{label} → NULL HANDLE");
             return;
         }
 
@@ -67,63 +87,50 @@ public static class WindowHelpers
 
         var className = GetWindowClassName(hWnd);
 
-        if (TryGetWindowRect(hWnd, out var r))
+        if (!TryGetWindowRect(hWnd, out var r))
         {
-            Trace.WriteLine(
-                $"FOREGROUND → HWND={hWnd} | PID={pid} | PROC={procName} | CLASS={className} | {r.Right - r.Left}x{r.Bottom - r.Top} @ ({r.Left},{r.Top})"
-            );
+            Trace.WriteLine($"{label} → HWND={hWnd} | FAILED RECT");
+            return;
         }
+
+        int x = r.Left;
+        int y = r.Top;
+        int w = r.Right - r.Left;
+        int h = r.Bottom - r.Top;
+
+        int monitor = GetMonitorIndexFromWindow(hWnd);
+
+        string fgTag = IsForeground(hWnd) ? " [FOREGROUND]" : "";
+
+        Trace.WriteLine(
+            $"{label}{fgTag} → HWND={hWnd} | PID={pid} | PROC={procName} | CLASS={className} | MON={monitor} | {w}x{h} @ ({x},{y})"
+        );
     }
 
-    // ---------------- EXPLORER-SPECIFIC DEBUG ----------------
+    // ---------------- LAUNCH DEBUG ----------------
 
-    public static void DebugExplorerWindows()
+    public static void DebugLaunchAttempt(string appType, int attempt)
     {
-        Trace.WriteLine("==== EXPLORER WINDOWS DEBUG ====");
+        Trace.WriteLine($"{appType.ToUpper()} scan attempt {attempt}");
+    }
 
-        var fg = GetForegroundWindow();
+    public static void DebugLaunchFailure(string appType)
+    {
+        Trace.WriteLine($"❌ {appType.ToUpper()} window NOT found after launch");
+    }
 
-        EnumWindows((hWnd, lParam) =>
-        {
-            if (!IsWindowVisible(hWnd))
-                return true;
+    public static void DebugBeforeCount(string appType, int count)
+    {
+        Trace.WriteLine($"{appType.ToUpper()} BEFORE count = {count}");
+    }
 
-            GetWindowThreadProcessId(hWnd, out uint pid);
+    // ---------------- APPLY DEBUG ----------------
 
-            string procName;
-
-            try
-            {
-                var proc = Process.GetProcessById((int)pid);
-                procName = proc.ProcessName;
-            }
-            catch
-            {
-                return true;
-            }
-
-            if (!procName.Equals("explorer", StringComparison.OrdinalIgnoreCase))
-                return true;
-
-            var className = GetWindowClassName(hWnd);
-
-            if (!TryGetWindowRect(hWnd, out var r))
-                return true;
-
-            int w = r.Right - r.Left;
-            int h = r.Bottom - r.Top;
-
-            string tag = hWnd == fg ? " <-- FOREGROUND" : "";
-
-            Trace.WriteLine(
-                $"EXPLORER → HWND={hWnd} | CLASS={className} | {w}x{h} @ ({r.Left},{r.Top}){tag}"
-            );
-
-            return true;
-
-        }, IntPtr.Zero);
-
-        Trace.WriteLine("==== END EXPLORER DEBUG ====");
+    public static void DebugApply(string appType, int monitor, int x, int y, int width, int height, bool maximized)
+    {
+        Trace.WriteLine(
+            $"APPLY → {appType} | MON={monitor} | {width}x{height} @ ({x},{y}) | MAX={maximized}"
+        );
     }
 
     // ---------------- WINDOW RECT ----------------

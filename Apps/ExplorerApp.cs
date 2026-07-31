@@ -1,4 +1,7 @@
 using System.Diagnostics;
+using System.Linq;
+using System.Threading;
+using System.Windows.Forms;
 
 public class ExplorerApp : IAppModule
 {
@@ -6,16 +9,14 @@ public class ExplorerApp : IAppModule
 
     public string DisplayName => "Windows Explorer";
 
+    // ----------------- CAPTURE -----------------
+
     public bool TryCapture(out AppConfig? app)
     {
         app = null;
 
-        Trace.WriteLine("==== Explorer Capture START ====");
-
         IntPtr selected = IntPtr.Zero;
-        int bestArea = 0;
 
-        // 🔥 Correct detection pipeline
         WindowHelpers.EnumWindows((hWnd, lParam) =>
         {
             if (!WindowHelpers.IsWindowVisible(hWnd))
@@ -27,7 +28,6 @@ public class ExplorerApp : IAppModule
             int width = r.Right - r.Left;
             int height = r.Bottom - r.Top;
 
-            // 🔥 Filter junk FIRST (before process check)
             if (width < 300 || height < 300)
                 return true;
 
@@ -45,77 +45,175 @@ public class ExplorerApp : IAppModule
                 return true;
             }
 
-            int area = width * height;
+            var className = WindowHelpers.GetWindowClassName(hWnd);
 
-            Trace.WriteLine($"Candidate → {width}x{height} @ ({r.Left},{r.Top}) PID={pid}");
+            if (!className.Equals("CabinetWClass", StringComparison.OrdinalIgnoreCase))
+                return true;
 
-            if (area > bestArea)
-            {
-                bestArea = area;
-                selected = hWnd;
-            }
+            WindowHelpers.DebugWindow("EXPLORER CANDIDATE", hWnd);
 
-            return true;
+            selected = hWnd;
+            return false;
 
         }, IntPtr.Zero);
 
         if (selected == IntPtr.Zero)
         {
-            Trace.WriteLine("❌ Explorer capture FAILED");
+            WindowHelpers.DebugWindow("EXPLORER SELECTED", selected);
             return false;
         }
 
+        WindowHelpers.DebugWindow("EXPLORER SELECTED", selected);
+
         if (!WindowHelpers.TryGetWindowRect(selected, out var rect))
         {
-            Trace.WriteLine("❌ RECT FAILED");
+            WindowHelpers.DebugWindow("EXPLORER FINAL FAILED", selected);
             return false;
         }
+
+        WindowHelpers.DebugWindow("EXPLORER FINAL", selected);
+
+        // 🔥 NEW: RELATIVE CAPTURE
+        var screen = Screen.FromHandle(selected);
+        int monitorIndex = Array.IndexOf(Screen.AllScreens, screen);
+
+        int relativeX = rect.Left - screen.Bounds.Left;
+        int relativeY = rect.Top - screen.Bounds.Top;
 
         app = new AppConfig
         {
             Type = Type,
-            X = rect.Left,
-            Y = rect.Top,
+            X = relativeX,
+            Y = relativeY,
             Width = rect.Right - rect.Left,
             Height = rect.Bottom - rect.Top,
             Maximized = false,
-            Monitor = WindowHelpers.GetMonitorIndexFromWindow(selected)
+            Monitor = monitorIndex
         };
-
-        Trace.WriteLine("✔ Explorer captured (ENUM method)");
 
         return true;
     }
+
+    // ----------------- ENRICH -----------------
 
     public void EnrichCaptured(AppConfig app)
     {
         app.Path = "";
     }
 
+    // ----------------- LAUNCH -----------------
+
     public void Launch(AppConfig app)
     {
-        var process = Process.Start(new ProcessStartInfo
+        var before = new HashSet<IntPtr>();
+
+        WindowHelpers.EnumWindows((hWnd, lParam) =>
+        {
+            if (!WindowHelpers.IsWindowVisible(hWnd))
+                return true;
+
+            var className = WindowHelpers.GetWindowClassName(hWnd);
+
+            if (className.Equals("CabinetWClass", StringComparison.OrdinalIgnoreCase))
+            {
+                before.Add(hWnd);
+            }
+
+            return true;
+
+        }, IntPtr.Zero);
+
+        WindowHelpers.DebugBeforeCount(Type, before.Count);
+
+        Process.Start(new ProcessStartInfo
         {
             FileName = "explorer.exe",
-            Arguments = app.Path ?? "",
+            Arguments = string.IsNullOrWhiteSpace(app.Path)
+                ? "/n"
+                : $"/n, \"{app.Path}\"",
             UseShellExecute = true
         });
 
-        if (process == null)
-            return;
+        IntPtr handle = IntPtr.Zero;
 
-        var handle = WindowHelpers.WaitForMainWindow(process);
+        for (int i = 0; i < 30; i++)
+        {
+            WindowHelpers.DebugLaunchAttempt(Type, i);
+
+            WindowHelpers.EnumWindows((hWnd, lParam) =>
+            {
+                if (!WindowHelpers.IsWindowVisible(hWnd))
+                    return true;
+
+                var className = WindowHelpers.GetWindowClassName(hWnd);
+
+                if (!className.Equals("CabinetWClass", StringComparison.OrdinalIgnoreCase))
+                    return true;
+
+                if (!before.Contains(hWnd))
+                {
+                    handle = hWnd;
+                    return false;
+                }
+
+                return true;
+
+            }, IntPtr.Zero);
+
+            if (handle != IntPtr.Zero)
+                break;
+
+            Thread.Sleep(100);
+        }
 
         if (handle != IntPtr.Zero)
         {
-            WindowHelpers.MoveWindow(
-                handle,
+            WindowHelpers.DebugWindow("EXPLORER LAUNCH HANDLE", handle);
+
+            // 🔥 NEW: CONVERT TO ABSOLUTE
+            var screen = Screen.AllScreens[app.Monitor];
+
+            int finalX = screen.Bounds.Left + app.X;
+            int finalY = screen.Bounds.Top + app.Y;
+
+            WindowHelpers.DebugApply(
+                app.Type,
+                app.Monitor,
                 app.X,
                 app.Y,
                 app.Width,
                 app.Height,
                 app.Maximized
             );
+
+            WindowHelpers.MoveWindow(
+                handle,
+                finalX,
+                finalY,
+                app.Width,
+                app.Height,
+                app.Maximized
+            );
+
+            Thread.Sleep(200);
+
+            // 🔥 Explorer override protection
+            WindowHelpers.MoveWindow(
+                handle,
+                finalX,
+                finalY,
+                app.Width,
+                app.Height,
+                app.Maximized
+            );
+
+            Thread.Sleep(100);
+
+            WindowHelpers.DebugWindow("EXPLORER AFTER MOVE", handle);
+        }
+        else
+        {
+            WindowHelpers.DebugLaunchFailure(Type);
         }
     }
 }
