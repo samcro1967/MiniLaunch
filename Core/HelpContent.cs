@@ -18,13 +18,16 @@ Run a Profile:
 - Right-click tray → Profiles → Run
 - Or double-click the tray icon (runs default profile)
 
+Manage Profiles:
+- Profiles → Edit / Rename / Delete / Set Default
+
 Default Profile:
-- First captured profile becomes default
-- Change via: Profiles → Set as Default
+- A default profile is used when double-clicking the tray icon
+- Set or change it via: Profiles → Set as Default
 
 Advanced Configuration:
-- Profiles can be edited manually
-- Open the Profiles folder from the About dialog
+- Profiles can be edited manually (JSON)
+- Open the App folder from the About dialog
 - Each profile is a JSON file
 
 You can customize things like:

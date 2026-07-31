@@ -10,7 +10,8 @@ It restores your entire workspace — apps, windows, and layout — in seconds.
 
 - Capture your current workspace into a profile
 - Launch saved profiles instantly
-- Manage profiles (Run / Rename / Delete)
+- Run your default profile via tray double-click
+- Manage profiles (Run / Edit / Rename / Delete / Set Default)
 - Tray-based UI (no window clutter)
 - Auto-refresh when profile files change
 - Optional "Start with Windows"
@@ -29,8 +30,8 @@ It restores your entire workspace — apps, windows, and layout — in seconds.
 
 See the `/examples` folder for sample configurations:
 
-- [captured_profile.json](examples/captured_profile.json) – Generated after capturing your current layout
-- [configured_profile.json](examples/configured_profile.json) – Edited version with apps, paths, and tabs defined
+- captured_profile.json – Generated after capturing your current layout
+- configured_profile.json – Edited version with apps, paths, and tabs defined
 
 You can copy and modify these to create your own profiles.
 
@@ -42,19 +43,21 @@ You can copy and modify these to create your own profiles.
 
 Right-click the tray icon:
 
-**Profiles**
+Profiles
 - Capture Profile
 - Run >
+- Edit >
 - Rename >
 - Delete >
+- Set Default >
 
-**Settings**
+Settings
 - Startup With Windows
   - Currently Enabled/Disabled
   - Enable/Disable
 
-**About**  
-**Exit**
+About  
+Exit
 
 ---
 
@@ -69,7 +72,7 @@ Right-click the tray icon:
 ### Run a Profile
 
 - Tray → Profiles → Run → [Profile Name]
-- Or double-click tray icon to run first profile
+- Double-click tray icon to run the default profile
 
 ---
 
@@ -80,10 +83,10 @@ MiniLaunch uses a modular launcher system. Currently supported:
 - Google Chrome (new window + tabs)
 - Windows Terminal (tabs / profiles)
 - Windows Explorer (single folder)
-- Notepad++ (session)
+- Notepad++
 - Visual Studio
 
-Support is implemented via internal modules (`IAppModule`).
+Support is implemented via internal modules (IAppModule).
 
 Additional apps can be added by implementing new modules.
 
@@ -91,13 +94,11 @@ Additional apps can be added by implementing new modules.
 
 ## Profile Storage
 
-Profiles are stored as JSON files:
+Profiles are stored as JSON files under:
 
-```
 %LOCALAPPDATA%\MiniLaunch\Profiles
-```
 
-Each profile represents a captured workspace.
+Most users do not need to access this directly. Profiles can be fully managed through the tray menu.
 
 ---
 
@@ -107,9 +108,7 @@ Each profile represents a captured workspace.
 
 Settings are stored here:
 
-```
 %LOCALAPPDATA%\MiniLaunch\settings.json
-```
 
 ---
 
@@ -118,7 +117,7 @@ Settings are stored here:
 You can edit this file manually:
 
 1. Close MiniLaunch
-2. Open `settings.json` in a text editor
+2. Open settings.json in a text editor
 3. Modify values
 4. Restart MiniLaunch
 
@@ -126,11 +125,23 @@ You can edit this file manually:
 
 ### Example
 
-```json
 {
   "StartWithWindows": true
 }
-```
+
+---
+
+## App Data Folder
+
+You can access the application data folder from:
+
+- Tray → About → Open App Folder
+
+This opens:
+
+%LOCALAPPDATA%\MiniLaunch
+
+This folder contains profiles, settings, and other app data.
 
 ---
 
@@ -142,18 +153,16 @@ MiniLaunch can start automatically with Windows.
   - Settings → Startup With Windows
 
 - Uses registry:
-  ```
   HKCU\Software\Microsoft\Windows\CurrentVersion\Run
-  ```
 
 ---
 
 ## Architecture
 
-- Tray-based `ApplicationContext`
-- Modular launcher system (`IAppModule`)
+- Tray-based ApplicationContext
+- Modular launcher system (IAppModule)
 - JSON-based profiles
-- `FileSystemWatcher` for live updates
+- FileSystemWatcher for live updates
 
 ---
 
@@ -170,9 +179,7 @@ MiniLaunch can start automatically with Windows.
 
 Check registry:
 
-```
 HKCU\Software\Microsoft\Windows\CurrentVersion\Run
-```
 
 ---
 
@@ -180,9 +187,7 @@ HKCU\Software\Microsoft\Windows\CurrentVersion\Run
 
 Verify files exist in:
 
-```
 %LOCALAPPDATA%\MiniLaunch\Profiles
-```
 
 ---
 
@@ -190,11 +195,10 @@ Verify files exist in:
 
 MiniLaunch is licensed under the MIT License.
 
-See [LICENSE](LICENSE) for details.
+See LICENSE for details.
 
 ---
 
 ## Notes
 
-MiniLaunch is part of the MiniSuite utilities.
 MiniLaunch is part of the MiniSuite utilities.
