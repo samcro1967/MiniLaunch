@@ -1,55 +1,40 @@
 ﻿using System.Diagnostics;
 using System.Linq;
 using System.Threading;
+using System.Windows.Forms;
 using MiniLaunch.Core;
 
-public class VisualStudioApp : IAppModule
+public class VisualStudioApp : BaseProcessAppModule
 {
-    public string Type => "visualstudio";
+    public override string Type => "visualstudio";
 
-    public string DisplayName => "Visual Studio";
+    public override string DisplayName => "Visual Studio";
 
-    // ----------------- CAPTURE -----------------
-
-    public bool TryCapture(out AppConfig? app)
-    {
-        app = null;
-
-        var proc = Process.GetProcessesByName("devenv")
-            .FirstOrDefault(p => p.MainWindowHandle != IntPtr.Zero);
-
-        if (proc == null)
-        {
-            Log.WriteCategory("CAPTURE", "visualstudio | no window found");
-            return false;
-        }
-
-        return WindowCaptureHelper.TryCaptureWindow(
-            type: Type,
-            handle: proc.MainWindowHandle,
-            out app
-        );
-    }
+    protected override string ProcessName => "devenv";
 
     // ----------------- ENRICH -----------------
 
-    public void EnrichCaptured(AppConfig app)
+    public override void EnrichCaptured(AppConfig app)
     {
         app.Path = "";
     }
 
-    // ----------------- LAUNCH -----------------
+    // ----------------- LAUNCH ARGS -----------------
 
-    public void Launch(AppConfig app)
+    protected override string BuildLaunchArguments(AppConfig app)
     {
-        string args = string.IsNullOrWhiteSpace(app.Path)
+        return string.IsNullOrWhiteSpace(app.Path)
             ? ""
             : $"\"{app.Path}\"";
+    }
 
-        var before = Process.GetProcessesByName("devenv")
-            .Where(p => p.MainWindowHandle != IntPtr.Zero)
-            .Select(p => p.MainWindowHandle)
-            .ToHashSet();
+    // ----------------- LAUNCH (CUSTOM) -----------------
+
+    public override void Launch(AppConfig app)
+    {
+        string args = BuildLaunchArguments(app);
+
+        var before = WindowProcessHelper.GetWindowSet(ProcessName);
 
         WindowHelpers.DebugBeforeCount(Type, before.Count);
 
@@ -75,10 +60,7 @@ public class VisualStudioApp : IAppModule
         {
             WindowHelpers.DebugLaunchAttempt(Type, i);
 
-            var after = Process.GetProcessesByName("devenv")
-                .Where(p => p.MainWindowHandle != IntPtr.Zero)
-                .Select(p => p.MainWindowHandle)
-                .ToList();
+            var after = WindowProcessHelper.GetWindowList(ProcessName);
 
             foreach (var h in after)
             {
@@ -104,22 +86,21 @@ public class VisualStudioApp : IAppModule
         // 🔥 fallback (non-splash)
         if (handle == IntPtr.Zero)
         {
-            Log.WriteCategory("LAUNCH", "visualstudio | no new window found, using fallback");
+            Log.WriteCategory("LAUNCH", "visualstudio | fallback triggered");
 
-            var existing = Process.GetProcessesByName("devenv")
-                .FirstOrDefault(p =>
-                    p.MainWindowHandle != IntPtr.Zero &&
-                    !WindowHelpers.GetWindowClassName(p.MainWindowHandle).Contains("VSSplash"));
+            var fallback = WindowProcessHelper
+                .GetWindowList(ProcessName)
+                .FirstOrDefault(h =>
+                    !WindowHelpers.GetWindowClassName(h).Contains("VSSplash"));
 
-            if (existing != null)
-                handle = existing.MainWindowHandle;
+            if (fallback != IntPtr.Zero)
+                handle = fallback;
         }
 
         if (handle != IntPtr.Zero)
         {
             WindowHelpers.DebugWindow("VS LAUNCH HANDLE", handle);
 
-            // 🔥 REL → ABS conversion (standardized)
             var screen = Screen.AllScreens[app.Monitor];
 
             int finalX = screen.Bounds.Left + app.X;

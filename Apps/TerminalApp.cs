@@ -2,15 +2,17 @@ using System.Diagnostics;
 using System.Linq;
 using MiniLaunch.Core;
 
-public class TerminalApp : IAppModule
+public class TerminalApp : BaseProcessAppModule
 {
-    public string Type => "terminal";
+    public override string Type => "terminal";
 
-    public string DisplayName => "Windows Terminal";
+    public override string DisplayName => "Windows Terminal";
+
+    protected override string ProcessName => "wt"; // used for launch only
 
     // ----------------- CAPTURE -----------------
 
-    public bool TryCapture(out AppConfig? app)
+    public override bool TryCapture(out AppConfig? app)
     {
         app = null;
 
@@ -32,26 +34,32 @@ public class TerminalApp : IAppModule
 
     // ----------------- ENRICH -----------------
 
-    public void EnrichCaptured(AppConfig app)
+    public override void EnrichCaptured(AppConfig app)
     {
         app.Tabs = new List<string>();
     }
 
+    // ----------------- LAUNCH ARGS -----------------
+
+    protected override string BuildLaunchArguments(AppConfig app)
+    {
+        if (app.Tabs?.Any() != true)
+            return "";
+
+        return string.Join(" ; ",
+            app.Tabs.Select(t => $"new-tab {t}"));
+    }
+
     // ----------------- LAUNCH -----------------
 
-    public void Launch(AppConfig app)
+    public override void Launch(AppConfig app)
     {
-        string? args = null;
-
-        if (app.Tabs?.Any() == true)
-        {
-            args = string.Join(" ; ",
-                app.Tabs.Select(t => $"new-tab {t}"));
-        }
+        string args = BuildLaunchArguments(app);
 
         WindowLaunchHelper.LaunchAndPosition(
             type: Type,
 
+            // 🔥 custom process detection (required)
             getExistingWindows: () =>
                 Process.GetProcesses()
                     .Where(p => IsTerminalProcess(p) && p.MainWindowHandle != IntPtr.Zero)
@@ -69,7 +77,7 @@ public class TerminalApp : IAppModule
                 var process = Process.Start(new ProcessStartInfo
                 {
                     FileName = "wt",
-                    Arguments = args ?? "",
+                    Arguments = args,
                     UseShellExecute = true
                 });
 

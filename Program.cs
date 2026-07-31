@@ -1,9 +1,8 @@
-using MiniLaunch; // ✅ NEW
+using MiniLaunch; // Help
 using MiniLaunch.Profiles;
 using MiniLaunch.UI;
 using System.Diagnostics;
 using System.Reflection;
-using System.Reflection.Metadata;
 using System.Threading;
 using System.Windows.Forms;
 using MiniLaunch.Core;
@@ -53,9 +52,22 @@ internal static class Program
 
             var modules = Assembly.GetExecutingAssembly()
                 .GetTypes()
-                .Where(t => typeof(IAppModule).IsAssignableFrom(t) && !t.IsInterface)
+                .Where(t =>
+                    typeof(IAppModule).IsAssignableFrom(t) &&
+                    !t.IsAbstract &&               // 🔥 FIX
+                    !t.IsInterface &&              // 🔥 SAFETY
+                    t.GetConstructor(Type.EmptyTypes) != null // 🔥 SAFETY
+                )
                 .Select(t => (IAppModule)Activator.CreateInstance(t)!)
                 .ToList();
+
+            // 🔥 ADD THIS BLOCK
+            foreach (var module in modules)
+            {
+                Log.WriteCategory("INIT", $"loaded module | {module.Type}");
+            }
+
+            Log.WriteCategory("INIT", $"total modules | {modules.Count}");
 
             var profileService = new ProfileService(modules);
 

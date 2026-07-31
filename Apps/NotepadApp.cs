@@ -1,82 +1,32 @@
-using System.Diagnostics;
 using System.Linq;
-using MiniLaunch.Core;
 
-public class NotepadApp : IAppModule
+public class NotepadApp : BaseProcessAppModule
 {
-    public string Type => "notepad";
+    public override string Type => "notepad";
 
-    public string DisplayName => "Notepad++";
+    public override string DisplayName => "Notepad++";
 
-    // ----------------- CAPTURE -----------------
-
-    public bool TryCapture(out AppConfig? app)
-    {
-        app = null;
-
-        var proc = Process.GetProcessesByName("notepad++")
-            .FirstOrDefault(p => p.MainWindowHandle != IntPtr.Zero);
-
-        if (proc == null)
-        {
-            Log.WriteCategory("CAPTURE", "notepad | no window found");
-            return false;
-        }
-
-        return WindowCaptureHelper.TryCaptureWindow(
-            type: Type,
-            handle: proc.MainWindowHandle,
-            out app
-        );
-    }
+    protected override string ProcessName => "notepad++";
 
     // ----------------- ENRICH -----------------
 
-    public void EnrichCaptured(AppConfig app)
+    public override void EnrichCaptured(AppConfig app)
     {
         app.Session = "";
     }
 
-    // ----------------- LAUNCH -----------------
+    // ----------------- LAUNCH ARGS -----------------
 
-    public void Launch(AppConfig app)
+    protected override string BuildLaunchArguments(AppConfig app)
     {
-        string exe = ResolveNotepadPath();
-
-        string args = string.IsNullOrWhiteSpace(app.Session)
+        return string.IsNullOrWhiteSpace(app.Session)
             ? ""
             : $"-openSession \"{app.Session}\"";
-
-        WindowLaunchHelper.LaunchAndPosition(
-            type: Type,
-
-            getExistingWindows: () =>
-                Process.GetProcessesByName("notepad++")
-                    .Where(p => p.MainWindowHandle != IntPtr.Zero)
-                    .Select(p => p.MainWindowHandle)
-                    .ToHashSet(),
-
-            getCurrentWindows: () =>
-                Process.GetProcessesByName("notepad++")
-                    .Where(p => p.MainWindowHandle != IntPtr.Zero)
-                    .Select(p => p.MainWindowHandle)
-                    .ToList(),
-
-            startProcess: () =>
-            {
-                var process = Process.Start(exe, args);
-
-                if (process == null)
-                {
-                    Log.WriteCategory("LAUNCH", "notepad | failed to start process");
-                }
-            },
-
-            app: app
-        );
     }
 
-    private string ResolveNotepadPath()
+    // ----------------- EXECUTABLE -----------------
+
+    protected override string GetExecutable()
     {
         var paths = new[]
         {

@@ -1,21 +1,20 @@
 using System.Diagnostics;
-using System.Linq;
 using System.Windows.Forms;
 using MiniLaunch.Core;
 
-public class ExplorerApp : IAppModule
+public class ExplorerApp : BaseWindowEnumAppModule
 {
-    public string Type => "explorer";
+    public override string Type => "explorer";
 
-    public string DisplayName => "Windows Explorer";
+    public override string DisplayName => "Windows Explorer";
 
-    // ----------------- CAPTURE -----------------
+    // ----------------- FIND WINDOW -----------------
 
-    public bool TryCapture(out AppConfig? app)
+    protected override bool TryFindWindow(out IntPtr selected)
     {
-        app = null;
+        selected = IntPtr.Zero;
 
-        IntPtr selected = IntPtr.Zero;
+        IntPtr found = IntPtr.Zero; // ✅ local variable (NOT out param)
 
         WindowHelpers.EnumWindows((hWnd, lParam) =>
         {
@@ -52,37 +51,31 @@ public class ExplorerApp : IAppModule
 
             WindowHelpers.DebugWindow("EXPLORER CANDIDATE", hWnd);
 
-            selected = hWnd;
+            found = hWnd; // ✅ SAFE
             return false;
 
         }, IntPtr.Zero);
 
-        if (selected == IntPtr.Zero)
-        {
-            Log.WriteCategory("CAPTURE", "explorer | no valid window found");
+        if (found == IntPtr.Zero)
             return false;
-        }
+
+        selected = found; // ✅ assign OUTSIDE lambda
 
         WindowHelpers.DebugWindow("EXPLORER SELECTED", selected);
 
-        // 🔥 Delegate to shared helper
-        return WindowCaptureHelper.TryCaptureWindow(
-            type: Type,
-            handle: selected,
-            out app
-        );
+        return true;
     }
 
     // ----------------- ENRICH -----------------
 
-    public void EnrichCaptured(AppConfig app)
+    public override void EnrichCaptured(AppConfig app)
     {
         app.Path = "";
     }
 
     // ----------------- LAUNCH -----------------
 
-    public void Launch(AppConfig app)
+    protected override void LaunchInternal(AppConfig app)
     {
         WindowLaunchHelper.LaunchAndPosition(
             type: Type,
@@ -141,7 +134,7 @@ public class ExplorerApp : IAppModule
 
             app: app,
 
-            doubleMove: true // 🔥 Explorer needs this
+            doubleMove: true // 🔥 Explorer override protection
         );
     }
 }
