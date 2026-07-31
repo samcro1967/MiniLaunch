@@ -12,7 +12,7 @@ public class TrayMenuBuilder
     private readonly Action<string> _run;
     private readonly Action<string> _rename;
     private readonly Action<string> _delete;
-    private readonly Action<string> _edit; // 🔥 NEW
+    private readonly Action<string> _edit;
     private readonly Action _showHelp;
     private readonly Action _showAbout;
     private readonly Action _exit;
@@ -34,7 +34,7 @@ public class TrayMenuBuilder
         Action<string> run,
         Action<string> rename,
         Action<string> delete,
-        Action<string> edit, // 🔥 NEW
+        Action<string> edit,
         Action showAbout,
         Action showHelp,
         Action exit)
@@ -44,7 +44,7 @@ public class TrayMenuBuilder
         _run = run;
         _rename = rename;
         _delete = delete;
-        _edit = edit; // 🔥 NEW
+        _edit = edit;
         _showAbout = showAbout;
         _showHelp = showHelp;
         _exit = exit;
@@ -66,14 +66,15 @@ public class TrayMenuBuilder
         // ---------------- PROFILES ----------------
         var profilesMenu = new ToolStripMenuItem("Profiles", AppIcons.Profile.ToBitmap());
 
+        // 🔥 Capture Profile (WITH ICON)
         profilesMenu.DropDownItems.Add(
-            new ToolStripMenuItem("Capture Profile", null, (_, _) => _capture())
+            new ToolStripMenuItem("Capture Profile", AppIcons.Capture.ToBitmap(), (_, _) => _capture())
         );
 
         profilesMenu.DropDownItems.Add(new ToolStripSeparator());
 
         // -------- RUN --------
-        var runMenu = new ToolStripMenuItem("Run");
+        var runMenu = new ToolStripMenuItem("Run", AppIcons.Run.ToBitmap());
 
         if (profiles.Count == 0)
         {
@@ -83,21 +84,22 @@ public class TrayMenuBuilder
         {
             foreach (var name in profiles)
             {
-                var text = name;
+                bool isDefault = name == currentDefault;
 
-                if (name == currentDefault)
-                    text = $"⭐ {name}";
-
-                runMenu.DropDownItems.Add(
-                    new ToolStripMenuItem(text, null, (_, _) => _run(name))
+                var item = new ToolStripMenuItem(
+                    name,
+                    isDefault ? AppIcons.Default.ToBitmap() : AppIcons.Run.ToBitmap(),
+                    (_, _) => _run(name)
                 );
+
+                runMenu.DropDownItems.Add(item);
             }
         }
 
         profilesMenu.DropDownItems.Add(runMenu);
 
-        // -------- EDIT (🔥 NEW) --------
-        var editMenu = new ToolStripMenuItem("Edit");
+        // -------- EDIT --------
+        var editMenu = new ToolStripMenuItem("Edit", AppIcons.Edit.ToBitmap());
 
         if (profiles.Count == 0)
         {
@@ -108,7 +110,7 @@ public class TrayMenuBuilder
             foreach (var name in profiles)
             {
                 editMenu.DropDownItems.Add(
-                    new ToolStripMenuItem(name, null, (_, _) => _edit(name))
+                    new ToolStripMenuItem(name, AppIcons.Edit.ToBitmap(), (_, _) => _edit(name))
                 );
             }
         }
@@ -116,7 +118,7 @@ public class TrayMenuBuilder
         profilesMenu.DropDownItems.Add(editMenu);
 
         // -------- RENAME --------
-        var renameMenu = new ToolStripMenuItem("Rename");
+        var renameMenu = new ToolStripMenuItem("Rename", AppIcons.Rename.ToBitmap());
 
         if (profiles.Count == 0)
         {
@@ -127,7 +129,7 @@ public class TrayMenuBuilder
             foreach (var name in profiles)
             {
                 renameMenu.DropDownItems.Add(
-                    new ToolStripMenuItem(name, null, (_, _) => _rename(name))
+                    new ToolStripMenuItem(name, AppIcons.Rename.ToBitmap(), (_, _) => _rename(name))
                 );
             }
         }
@@ -135,7 +137,7 @@ public class TrayMenuBuilder
         profilesMenu.DropDownItems.Add(renameMenu);
 
         // -------- DELETE --------
-        var deleteMenu = new ToolStripMenuItem("Delete");
+        var deleteMenu = new ToolStripMenuItem("Delete", AppIcons.Delete.ToBitmap());
 
         if (profiles.Count == 0)
         {
@@ -146,7 +148,7 @@ public class TrayMenuBuilder
             foreach (var name in profiles)
             {
                 deleteMenu.DropDownItems.Add(
-                    new ToolStripMenuItem(name, null, (_, _) => _delete(name))
+                    new ToolStripMenuItem(name, AppIcons.Delete.ToBitmap(), (_, _) => _delete(name))
                 );
             }
         }
@@ -154,7 +156,7 @@ public class TrayMenuBuilder
         profilesMenu.DropDownItems.Add(deleteMenu);
 
         // -------- SET DEFAULT --------
-        var defaultMenu = new ToolStripMenuItem("Set as Default");
+        var defaultMenu = new ToolStripMenuItem("Set as Default", AppIcons.Default.ToBitmap());
 
         if (profiles.Count == 0)
         {
@@ -164,23 +166,23 @@ public class TrayMenuBuilder
         {
             foreach (var name in profiles)
             {
-                var text = name;
-
-                if (name == currentDefault)
-                    text = $"⭐ {name}";
+                bool isDefault = name == currentDefault;
 
                 defaultMenu.DropDownItems.Add(
-                    new ToolStripMenuItem(text, null, (_, _) =>
-                    {
-                        Directory.CreateDirectory(AppDataDir);
-                        File.WriteAllText(DefaultProfilePath, name);
-                    })
+                    new ToolStripMenuItem(
+                        name,
+                        isDefault ? AppIcons.Default.ToBitmap() : null,
+                        (_, _) =>
+                        {
+                            Directory.CreateDirectory(AppDataDir);
+                            File.WriteAllText(DefaultProfilePath, name);
+                        }
+                    )
                 );
             }
         }
 
         profilesMenu.DropDownItems.Add(new ToolStripSeparator());
-
         profilesMenu.DropDownItems.Add(defaultMenu);
 
         menu.Items.Add(profilesMenu);
@@ -225,7 +227,6 @@ public class TrayMenuBuilder
             }
 
             File.WriteAllText(SuppressFlagPath, "1");
-
             Application.Restart();
         };
 

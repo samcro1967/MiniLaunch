@@ -11,6 +11,14 @@ namespace MiniLaunch.UI
         private static Icon? _settings;
         private static Icon? _profile;
         private static Icon? _help;
+        private static Icon? _run;
+        private static Icon? _edit;
+        private static Icon? _rename;
+        private static Icon? _delete;
+
+        // 🔥 NEW
+        private static Icon? _capture;
+        private static Icon? _default;
 
         private static Icon Load(string fileName)
         {
@@ -44,5 +52,25 @@ namespace MiniLaunch.UI
 
         public static Icon Help =>
             _help ??= Load("help.ico");
+
+        public static Icon Run =>
+            _run ??= Load("run.ico");
+
+        public static Icon Edit =>
+            _edit ??= Load("edit.ico");
+
+        public static Icon Rename =>
+            _rename ??= Load("rename.ico");
+
+        public static Icon Delete =>
+            _delete ??= Load("delete.ico");
+
+        // 🔥 NEW ICONS
+
+        public static Icon Capture =>
+            _capture ??= Load("capture.ico");
+
+        public static Icon Default =>
+            _default ??= Load("default.ico");
     }
 }

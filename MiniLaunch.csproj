@@ -34,19 +34,33 @@
 
 	<ItemGroup>
 		<None Remove="Resources\about.ico" />
+		<None Remove="Resources\capture.ico" />
+		<None Remove="Resources\default.ico" />
+		<None Remove="Resources\delete.ico" />
+		<None Remove="Resources\edit.ico" />
 		<None Remove="Resources\exit.ico" />
 		<None Remove="Resources\help.ico" />
 		<None Remove="Resources\MiniLaunch.ico" />
 		<None Remove="Resources\profile.ico" />
+		<None Remove="Resources\rename.ico" />
+		<None Remove="Resources\restore.ico" />
+		<None Remove="Resources\run.ico" />
 		<None Remove="Resources\settings.ico" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<EmbeddedResource Include="Resources\about.ico" />
+		<EmbeddedResource Include="Resources\capture.ico" />
+		<EmbeddedResource Include="Resources\default.ico" />
+		<EmbeddedResource Include="Resources\delete.ico" />
+		<EmbeddedResource Include="Resources\edit.ico" />
 		<EmbeddedResource Include="Resources\exit.ico" />
 		<EmbeddedResource Include="Resources\help.ico" />
 		<EmbeddedResource Include="Resources\MiniLaunch.ico" />
 		<EmbeddedResource Include="Resources\profile.ico" />
+		<EmbeddedResource Include="Resources\rename.ico" />
+		<EmbeddedResource Include="Resources\restore.ico" />
+		<EmbeddedResource Include="Resources\run.ico" />
 		<EmbeddedResource Include="Resources\settings.ico" />
 	</ItemGroup>
 
