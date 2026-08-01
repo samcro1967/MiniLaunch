@@ -27,13 +27,12 @@ Default Profile:
 
 Advanced Configuration:
 - Profiles can be edited manually (JSON)
-- Open the App folder from the About dialog
-- Each profile is a JSON file
+- Right-click tray → Profiles → Edit
 
-You can customize things like:
+You can customize the following for each app:
 - File paths (Explorer, Notepad++, etc.)
 - URLs (Chrome)
-- Terminal starting directories
+- Terminal starting directories or profiles
 - Notepad++ sessions
 - Visual Studio solution paths
 
@@ -41,6 +40,8 @@ Note:
 - Capture does NOT detect tabs, sessions, or internal app state
 - Only window layout is captured automatically
 - Advanced behavior must be configured manually in the profile JSON
+- Manual edits override captured values
+- Changes take effect the next time the profile is run
 
 Location:
 %LOCALAPPDATA%\MiniLaunch\Profiles";
